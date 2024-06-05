@@ -1,9 +1,20 @@
-use std::fs;
-
+use std::process::Command;
 fn main() {
    
+	let out = Command::new("ffmpeg")
+	.args(["-i", r"C:\Users\squid\Desktop\Projects\project-soap\test\Eagle Eyed Tiger - VIQ & Eagle Eyed Tiger - Enough For Me.webm", "-af", "volume=enable='between(t,5,10)':volume=0", "-c:v", "copy", "testout.webm"])
+	.output()
+	.expect("failed to execute process");
 
-	let content = fs::read_to_string("SMii7Y - This Deer Game has gone TOO FAR.en.vtt").unwrap();
-    let parse_out = webvtt_parser::Vtt::parse(&content);
-	print!("{:?}", parse_out);
+	println!("{:?}", out);
+
+}
+
+fn call_ffmpeg(times_in: Curse) {
+
+}
+
+struct Curse {
+	start: i32,
+	end: i32
 }
