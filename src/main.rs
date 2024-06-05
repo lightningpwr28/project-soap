@@ -9,19 +9,29 @@ fn main() {
 	println!("{:?}", out);
 
 }
-
+// Calls the FFmpeg command line program to remove the audio of the expletives from the video or audio file the user puts in
+// times_in is an array of locations where expletives are in the file at file_location
 fn call_ffmpeg(times_in: &[Curse], file_location: &String) {
+	// Stores the list of filters that determine which audio segments will be cut out
 	let mut filter_string = String::new();
+
+	// This loops over each expletive in times_in and converts the data into a filter FFmpeg can use.
 	for curse in times_in {
 		filter_string.push_str(&format!("volume=enable='between(t,{},{})':volume=0, ", curse.start, curse.end));
 	}
 
+	// If left unedited, the last two characters would be ', ', which we don't want.
 	filter_string.pop();
 	filter_string.pop();
 
+	// This builds the command.
 	let _out = Command::new("ffmpeg").arg("-i")
 	.arg(file_location)
+	.arg("-af")
 	.arg(filter_string)
+	.args(["-c:v", "copy"])
+	.arg(&format!("{}", file_location)).output() // This tries to overwrite the original file. Don't know if this is a good idea.
+	.expect("failed to execute process");
 
 }
 
