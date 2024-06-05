@@ -10,7 +10,18 @@ fn main() {
 
 }
 
-fn call_ffmpeg(times_in: Curse) {
+fn call_ffmpeg(times_in: &[Curse], file_location: &String) {
+	let mut filter_string = String::new();
+	for curse in times_in {
+		filter_string.push_str(&format!("volume=enable='between(t,{},{})':volume=0, ", curse.start, curse.end));
+	}
+
+	filter_string.pop();
+	filter_string.pop();
+
+	let _out = Command::new("ffmpeg").arg("-i")
+	.arg(file_location)
+	.arg(filter_string)
 
 }
 
