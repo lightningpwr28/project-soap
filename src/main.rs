@@ -19,6 +19,7 @@ fn main() {
 	println!("{:?}", out);
 
 }
+
 // Calls the FFmpeg command line program to remove the audio of the expletives from the video or audio file the user puts in
 // times_in is an array of locations where expletives are in the file at file_location
 fn remove_curses(times_in: &[Curse], file_location: &String) {
@@ -112,7 +113,7 @@ fn find_curses(file_location: &str, model_path: &str) {
     }format!("{}.wav", file_location)
 }
 
-fn find_curses_2<'a>(file_location: &'a str, model_path: &'a str) -> Vec<vosk::Word<'a>> {
+fn find_curses_2(file_location: &str, model_path: &str) {
 	// Load the Vosk model
     let model = Model::new(model_path).expect("Could not create model");
 
@@ -140,8 +141,7 @@ fn find_curses_2<'a>(file_location: &'a str, model_path: &'a str) -> Vec<vosk::W
 
 	recognizer.accept_waveform(&samples);
 
-	let curses = recognizer.final_result().single().expect("Error in outputting result").result;
-	return curses;
+	recognizer.final_result().single().expect("Error in outputting result").result.as_mut_slice();
 
 
 }
