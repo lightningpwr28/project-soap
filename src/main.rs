@@ -17,7 +17,7 @@ fn main() {
 
 // Calls the FFmpeg command line program to remove the audio of the expletives from the video or audio file the user puts in
 // times_in is an array of locations where expletives are in the file at file_location
-fn remove_curses(times_in: &[vosk::Word], file_location: &String) {
+fn remove_curses(times_in: &[vosk::Word], file_location: &str) {
     // Stores the list of filters that determine which audio segments will be cut out
     let mut filter_string = String::new();
 
@@ -55,12 +55,12 @@ fn preprocess_audio(file_location: &String) -> String {
     return preprocessed_file_location;
 }
 
-fn find_and_remove_curses(file_location: &str, model_path: &str) {
+fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str, model_path: &str) {
     // Load the Vosk model
     let model = Model::new(model_path).expect("Could not create model");
 
     // Open the WAV file
-    let mut reader = hound::WavReader::open(file_location).expect("Could not open WAV file");
+    let mut reader = hound::WavReader::open(preprocessed_file_location).expect("Could not open WAV file");
 
     // Check if audio file is mono PCM
     if reader.spec().channels != 1 || reader.spec().sample_format != hound::SampleFormat::Int {
@@ -85,12 +85,13 @@ fn find_and_remove_curses(file_location: &str, model_path: &str) {
     // Feed the model the sound file. I do this all at once because I don't care about real-time output.
     recognizer.accept_waveform(&samples);
 
-    let curses = recognizer
+    let binding = recognizer
         .final_result()
         .single()
-        .expect("Error in outputting result")
+        .expect("Error in outputting result");
+    let curses = binding
         .result
         .as_slice();
 
-
+	remove_curses(curses, file_location);
 }
