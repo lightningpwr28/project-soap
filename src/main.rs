@@ -109,7 +109,41 @@ fn find_curses(file_location: &str, model_path: &str) {
                 }
             }
         }
+    }format!("{}.wav", file_location)
+}
+
+fn find_curses_2<'a>(file_location: &'a str, model_path: &'a str) -> Vec<vosk::Word<'a>> {
+	// Load the Vosk model
+    let model = Model::new(model_path).expect("Could not create model");
+
+    // Open the WAV file
+    let mut reader = hound::WavReader::open(file_location).expect("Could not open WAV file");
+
+    // Check if audio file is mono PCM
+    if reader.spec().channels != 1 || reader.spec().sample_format != hound::SampleFormat::Int {
+        panic!("Audio file must be WAV format mono PCM.");
     }
+
+	// Get the samples from the WAV file
+	let samples = reader
+        .samples()
+        .collect::<hound::Result<Vec<i16>>>()
+        .expect("Could not read WAV file");
+
+    // Create a recognizer
+	// might want to use Recognizer::new_with_grammar, but I'm not sure what the requirements listed in the docs mean
+    let mut recognizer = Recognizer::new(&model, reader.spec().sample_rate as f32).expect("Could not create recognizer");
+
+	recognizer.set_words(true);
+	// might need to change if accuracy with multiple people speaking at the same time is bad
+	//recognizer.set_partial_words(true);
+
+	recognizer.accept_waveform(&samples);
+
+	let curses = recognizer.final_result().single().expect("Error in outputting result").result;
+	return curses;
+
+
 }
 
 struct Curse {
