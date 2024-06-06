@@ -1,4 +1,14 @@
+// For FFmpeg
 use std::process::Command;
+
+// For Vosk
+use std::env;
+use std::fs::File;
+use std::io::Read;
+use vosk::{Model, Recognizer};
+use serde_json::Value;
+use hound;
+
 fn main() {
    
 	let out = Command::new("ffmpeg")
@@ -11,7 +21,7 @@ fn main() {
 }
 // Calls the FFmpeg command line program to remove the audio of the expletives from the video or audio file the user puts in
 // times_in is an array of locations where expletives are in the file at file_location
-fn call_ffmpeg(times_in: &[Curse], file_location: &String) {
+fn remove_curses(times_in: &[Curse], file_location: &String) {
 	// Stores the list of filters that determine which audio segments will be cut out
 	let mut filter_string = String::new();
 
@@ -33,6 +43,62 @@ fn call_ffmpeg(times_in: &[Curse], file_location: &String) {
 	.arg(&format!("{}", file_location)).output() // This tries to overwrite the original file. Don't know if this is a good idea.
 	.expect("failed to execute process");
 
+}
+
+// Machine Generated
+fn find_curses(file_location: &str, model_path: &str) {
+    // Load the Vosk model
+    let model = Model::new(model_path).expect("Could not create model");
+
+    // Open the WAV file
+    let mut reader = hound::WavReader::open(file_location).expect("Could not open WAV file");
+
+    // Check if audio file is mono PCM
+    if reader.spec().channels != 1 || reader.spec().sample_format != hound::SampleFormat::Int {
+        panic!("Audio file must be WAV format mono PCM.");
+    }
+
+    // Create a recognizer
+    let mut recognizer = Recognizer::new(&model, reader.spec().sample_rate as f32).expect("Could not create recognizer");
+
+    // Buffer for reading audio
+    let mut buffer = [0; 4000];
+    let mut results = Vec::new();
+
+    // Read audio in chunks
+    while let Ok(samples_read) = reader.read_i16_into(&mut buffer) {
+        if samples_read == 0 {
+            break;
+        }
+        if recognizer.accept_waveform(&buffer[..samples_read * 2]) {
+            let result_json = recognizer.result().expect("Error getting result");
+            let result: Value = serde_json::from_str(&result_json).expect("Could not parse JSON");
+            results.push(result);
+        } else {
+            let partial_result_json = recognizer.partial_result().expect("Error getting partial result");
+            let partial_result: Value = serde_json::from_str(&partial_result_json).expect("Could not parse JSON");
+            results.push(partial_result);
+        }
+    }
+
+    // Get final result
+    let final_result_json = recognizer.final_result().expect("Error getting final result");
+    let final_result: Value = serde_json::from_str(&final_result_json).expect("Could not parse JSON");
+    results.push(final_result);
+
+    // Extract word timestamps
+    for result in results {
+        if let Some(result_obj) = result.as_object() {
+            if let Some(words) = result_obj.get("result") {
+                for word_info in words.as_array().unwrap() {
+                    let word = word_info["word"].as_str().unwrap();
+                    let start_time = word_info["start"].as_f64().unwrap();
+                    let end_time = word_info["end"].as_f64().unwrap();
+                    println!("Word: {}, Start time: {}s, End time: {}s", word, start_time, end_time);
+                }
+            }
+        }
+    }
 }
 
 struct Curse {
