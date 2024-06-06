@@ -45,6 +45,17 @@ fn remove_curses(times_in: &[Curse], file_location: &String) {
 
 }
 
+fn preprocess_audio(file_location: &String) -> String {
+
+	let preprocessed_file_location = format!("{}.wav", file_location);
+
+	Command::new("ffmpeg")
+	.args(["-i", &format!("{}", file_location)])
+	.args(["-ac", "1"]) // Might need to 
+	.arg(&preprocessed_file_location);
+	return preprocessed_file_location;
+}
+
 // Machine Generated
 fn find_curses(file_location: &str, model_path: &str) {
     // Load the Vosk model
