@@ -3,7 +3,6 @@ use std::process::Command;
 
 // For Vosk
 use hound;
-use serde_json::Value;
 use vosk::{Model, Recognizer};
 
 fn main() {
