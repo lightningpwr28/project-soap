@@ -95,20 +95,18 @@ fn remove_curses(times_in: &[vosk::Word], file_location: &str) {
 
     // This loops over each expletive in times_in and converts the data into a filter FFmpeg can use.
     for curse in times_in {
-        if curse.word == "fuck"
-            || curse.word == "shit"
-            || curse.word == "damn"
-            || curse.word == "fucking"
-        {
+        
+        if curse.word != "[unk]" {
             filter_string.push_str(&format!(
                 "volume=enable='between(t,{},{})':volume=0, ",
                 curse.start, curse.end
             ));
-
-            println!("Removed one from {} to {}", curse.start, curse.end);
+            
+            println!("Removed {} at from {} to {}", curse.word, curse.start, curse.end);
 
             number_of_curses += 1;
         }
+        
     }
 
     // If left unedited, the last two characters would be ', ', which we don't want.
