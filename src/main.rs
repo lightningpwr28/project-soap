@@ -6,12 +6,12 @@ use hound;
 use vosk::{Model, Recognizer};
 
 fn main() {
-    let out = Command::new("ffmpeg")
-	.args(["-i", r"C:\Users\squid\Desktop\Projects\project-soap\test\Eagle Eyed Tiger - VIQ & Eagle Eyed Tiger - Enough For Me.webm", "-af", "volume=enable='between(t,5,10)':volume=0", "-c:v", "copy", "testout.webm"])
-	.output()
-	.expect("failed to execute process");
 
-    println!("{:?}", out);
+    let file_location = "test\\SMii7Y - This Party Game Takes me Back.webm";
+    let model_location = "vosk\\model";
+
+    find_and_remove_curses(file_location, &preprocess_audio(file_location), model_location);
+
 }
 
 // Calls the FFmpeg command line program to remove the audio of the expletives from the video or audio file the user puts in
@@ -44,7 +44,7 @@ fn remove_curses(times_in: &[vosk::Word], file_location: &str) {
         .expect("failed to execute process");
 }
 
-fn preprocess_audio(file_location: &String) -> String {
+fn preprocess_audio(file_location: &str) -> String {
     let preprocessed_file_location = format!("{}.wav", file_location);
 
     Command::new("ffmpeg")
