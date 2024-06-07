@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 // For FFmpeg
 use std::{process::Command, time::Instant};
 
@@ -63,11 +64,10 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
         .expect("Could not read WAV file");
 
     // Create a recognizer
-    let mut recognizer = Recognizer::new_with_grammar(
+    let mut recognizer = Recognizer::new(
         &model,
         reader.spec().sample_rate as f32,
-        load_expletives().as_slice(),
-    )
+        )
     .expect("Could not create recognizer");
 
     recognizer.set_words(true);
@@ -83,12 +83,12 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
         .expect("Error in outputting result");
     let curses = binding.result.as_slice();
 
-    remove_curses(curses, file_location);
+    remove_curses(curses, file_location, load_expletives());
 }
 
 // Calls the FFmpeg command line program to remove the audio of the expletives from the video or audio file the user puts in
 // times_in is an array of locations where expletives are in the file at file_location
-fn remove_curses(times_in: &[vosk::Word], file_location: &str) {
+fn remove_curses(times_in: &[vosk::Word], file_location: &str, curses: HashSet<String>) {
     // Stores the list of filters that determine which audio segments will be cut out
     let mut filter_string = String::new();
     let mut number_of_curses = 0;
@@ -96,7 +96,7 @@ fn remove_curses(times_in: &[vosk::Word], file_location: &str) {
     // This loops over each expletive in times_in and converts the data into a filter FFmpeg can use.
     for curse in times_in {
         
-        if curse.word != "[unk]" {
+        if curses.contains(curse.word) {
             filter_string.push_str(&format!(
                 "volume=enable='between(t,{},{})':volume=0, ",
                 curse.start, curse.end
@@ -140,19 +140,17 @@ fn remove_curses(times_in: &[vosk::Word], file_location: &str) {
     println!("Removed {} expletives.", number_of_curses);
 }
 
-fn load_expletives() -> Vec<String> {
-    let mut list = Vec::<String>::new();
+fn load_expletives() -> HashSet<String> {
+    let mut list = HashSet::<String>::new();
 
     if let Ok(lines) = read_lines("list.txt") {
         // Consumes the iterator, returns an (Optional) String
         for line in lines.flatten() {
             if !line.starts_with("/") && line != "" {
-                list.push(line);
+                list.insert(line);
             }
         }
     }
-
-    list.push(String::from("[unk]"));
 
     return list;
 
