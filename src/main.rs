@@ -102,7 +102,7 @@ fn remove_curses(times_in: &[vosk::Word], file_location: &str, curses: HashSet<S
                 curse.start, curse.end
             ));
             
-            println!("Removed {} at from {} to {}", curse.word, curse.start, curse.end);
+            println!("Removed {} at {} to {}", curse.word, curse.start, curse.end);
 
             number_of_curses += 1;
         }
