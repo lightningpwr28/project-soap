@@ -5,6 +5,11 @@ use std::{process::Command, time::Instant};
 use hound;
 use vosk::{Model, Recognizer};
 
+// For loading list of swear words
+use std::fs::File;
+use std::io::{self, BufRead};
+use std::path::Path;
+
 fn main() {
     let file_location = "test\\Extra Crispy - Crispy reacts to Daily Dose of Internet.webm";
     let model_location = "vosk\\model\\vosk-model-en-us-0.22-lgraph";
@@ -19,7 +24,7 @@ fn main() {
 
     let end = Instant::now();
 
-    println!("Filtering took {:#?}", end.duration_since(start)/60);
+    println!("Filtering took {:#?}", end.duration_since(start) / 60);
 }
 
 fn preprocess_audio(file_location: &str) -> String {
@@ -58,13 +63,16 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
         .expect("Could not read WAV file");
 
     // Create a recognizer
-    // might want to use Recognizer::new_with_grammar, but I'm not sure what the requirements listed in the docs mean
-    let mut recognizer = Recognizer::new(&model, reader.spec().sample_rate as f32)
-        .expect("Could not create recognizer");
+    let mut recognizer = Recognizer::new_with_grammar(
+        &model,
+        reader.spec().sample_rate as f32,
+        load_expletives().as_slice(),
+    )
+    .expect("Could not create recognizer");
 
     recognizer.set_words(true);
     // might need to change if accuracy with multiple people speaking at the same time is bad
-    recognizer.set_partial_words(true);
+    //recognizer.set_partial_words(true);
 
     // Feed the model the sound file. I do this all at once because I don't care about real-time output.
     recognizer.accept_waveform(&samples);
@@ -110,7 +118,12 @@ fn remove_curses(times_in: &[vosk::Word], file_location: &str) {
     println!("{}", filter_string);
 
     let mut file_location_string = file_location.to_string();
-    file_location_string.insert_str(file_location_string.find('.').expect("Couldn't find file type"), "-clean");
+    file_location_string.insert_str(
+        file_location_string
+            .find('.')
+            .expect("Couldn't find file type"),
+        "-clean",
+    );
 
     // This builds the command.
     let out = Command::new("ffmpeg")
@@ -129,4 +142,27 @@ fn remove_curses(times_in: &[vosk::Word], file_location: &str) {
     println!("Removed {} expletives.", number_of_curses);
 }
 
+fn load_expletives() -> Vec<String> {
+    let mut list = Vec::<String>::new();
 
+    if let Ok(lines) = read_lines("list.txt") {
+        // Consumes the iterator, returns an (Optional) String
+        for line in lines.flatten() {
+            if !line.starts_with("/") && line != "" {
+                list.push(line);
+            }
+        }
+    }
+
+    list.push(String::from("[unk]"));
+
+    return list;
+
+    fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+    where
+        P: AsRef<Path>,
+    {
+        let file = File::open(filename)?;
+        Ok(io::BufReader::new(file).lines())
+    }
+}
