@@ -1,6 +1,7 @@
+use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::{fs, thread};
-use serde_json::{Value, json};
+use serde_json::json;
 
 // For FFmpeg
 use std::{process::Command, time::Instant};
@@ -75,17 +76,29 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
 
     let mut samples_half = sample_chunks.next().unwrap().to_vec();
 
-    thread::spawn(move || split_threads(&mut recognizer_1, samples_half, "1"));
+    let thread_1 = thread::spawn(move || split_threads(&mut recognizer_1, samples_half, "1"));
 
 
     recognizer_2.set_words(true);
 
     samples_half = sample_chunks.next().unwrap().to_vec();
 
-    thread::spawn(move || split_threads(&mut recognizer_2, samples_half, "2"));
+    let thread_2 = thread::spawn(move || split_threads(&mut recognizer_2, samples_half, "2"));
 
+    thread_1.join().unwrap();
+    thread_2.join().unwrap();
 
     let mut times_in: Vec<vosk::Word> = Vec::new();
+
+
+    let file_1 = fs::read_to_string(format!("remove_at_{:?}.json", 1)).expect("Error opening json");
+    let json_1 = &mut serde_json::from_str(&file_1).expect("Error in deserializing json");
+    times_in.append(json_1);
+
+    let file_2 = fs::read_to_string(format!("remove_at_{:?}.json", 2)).expect("Error opening json");
+    let json_2 = &mut serde_json::from_str(&file_2).expect("Error in deserializing json");
+    times_in.append(json_2);
+
 
     let curse_list = load_expletives();
 
