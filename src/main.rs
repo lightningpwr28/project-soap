@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::collections::HashSet;
+use std::thread::JoinHandle;
 use std::{fs, thread};
 use serde_json::json;
 
@@ -69,35 +70,32 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
 
     let mut sample_chunks = samples.chunks_exact(samples.len() / 2);
 
-    let mut recognizer_1 = Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
-    let mut recognizer_2 = Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
+    let mut threads: Vec<JoinHandle<()>> = Vec::new();
 
-    recognizer_1.set_words(true);
+    for i in [..2] {
+        let mut recognizer = Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
+        recognizer.set_words(true);
 
-    let mut samples_half = sample_chunks.next().unwrap().to_vec();
+        let samples_half = sample_chunks.next().unwrap().to_vec();
 
-    let thread_1 = thread::spawn(move || split_threads(&mut recognizer_1, samples_half, "1"));
+        let thread = thread::spawn(move || split_threads(&mut recognizer, samples_half, &format!("{:?}", i)));
 
+        threads.push(thread);
 
-    recognizer_2.set_words(true);
+    }
 
-    samples_half = sample_chunks.next().unwrap().to_vec();
-
-    let thread_2 = thread::spawn(move || split_threads(&mut recognizer_2, samples_half, "2"));
-
-    thread_1.join().unwrap();
-    thread_2.join().unwrap();
+    for thread in threads {
+        thread.join();
+    }
 
     let mut times_in: Vec<vosk::Word> = Vec::new();
 
 
-    let file_1 = fs::read_to_string(format!("remove_at_{:?}.json", 1)).expect("Error opening json");
-    let json_1 = &mut serde_json::from_str(&file_1).expect("Error in deserializing json");
-    times_in.append(json_1);
-
-    let file_2 = fs::read_to_string(format!("remove_at_{:?}.json", 2)).expect("Error opening json");
-    let json_2 = &mut serde_json::from_str(&file_2).expect("Error in deserializing json");
-    times_in.append(json_2);
+    for i in [..2]{
+        let file = fs::read_to_string(format!("remove_at_{:?}.json", i)).expect("Error opening json");
+        let mut json: Vec<vosk::Word> = serde_json::from_str(&file).expect("Error in deserializing json");
+        times_in.append(&mut json);
+    }
 
 
     let curse_list = load_expletives();
