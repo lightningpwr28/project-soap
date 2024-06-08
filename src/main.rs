@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::{fs, thread};
-use serde_json;
+use serde_json::{Value, json};
 
 // For FFmpeg
 use std::{process::Command, time::Instant};
@@ -168,9 +168,7 @@ fn load_expletives() -> HashSet<String> {
 }
 
 fn split_threads(recognizer: &mut Recognizer, samples: Vec<i16>, thread_name: &str) {
-    // might need to change if accuracy with multiple people speaking at the same time is bad
-    //recognizer.set_partial_words(true);
-
+    
     // Feed the model the sound file. I do this all at once because I don't care about real-time output.
     recognizer.accept_waveform(&samples);
 
@@ -179,6 +177,9 @@ fn split_threads(recognizer: &mut Recognizer, samples: Vec<i16>, thread_name: &s
         .single()
         .expect("Error in outputting result");
     let curses = binding.result;
-    fs::write(format!("remove_at_{}.json", thread_name), curses);
+
+    println!("{:?}", curses);
+
+    fs::write(format!("remove_at_{}.json", thread_name), json!(curses).to_string()).expect(&format!("Error outputting thread {} json to file", thread_name));
 
 }
