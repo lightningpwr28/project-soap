@@ -1,6 +1,6 @@
 use std::collections::HashSet;
-use std::sync::mpsc::{channel, Sender};
-use std::thread;
+use std::{fs, thread};
+use serde_json;
 
 // For FFmpeg
 use std::{process::Command, time::Instant};
@@ -71,30 +71,21 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
     let mut recognizer_1 = Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
     let mut recognizer_2 = Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
 
-    let (tx, rx) = channel::<Vec<vosk::Word>>();
-
     recognizer_1.set_words(true);
 
-    let samples_half = sample_chunks.next().unwrap().to_vec();
+    let mut samples_half = sample_chunks.next().unwrap().to_vec();
 
-    let tx_clone = tx.clone();
-
-    thread::spawn(move || split_threads(&mut recognizer_1, samples_half, tx_clone));
+    thread::spawn(move || split_threads(&mut recognizer_1, samples_half, "1"));
 
 
     recognizer_2.set_words(true);
 
-    let samples_half = sample_chunks.next().unwrap().to_vec();
+    samples_half = sample_chunks.next().unwrap().to_vec();
 
-    let tx_clone = tx;
-
-    thread::spawn(move || split_threads(&mut recognizer_2, samples_half, tx_clone));
+    thread::spawn(move || split_threads(&mut recognizer_2, samples_half, "2"));
 
 
     let mut times_in: Vec<vosk::Word> = Vec::new();
-
-    times_in.append(&mut rx.recv().unwrap());
-    times_in.append(&mut rx.recv().unwrap());
 
     let curse_list = load_expletives();
 
@@ -176,7 +167,7 @@ fn load_expletives() -> HashSet<String> {
     }
 }
 
-fn split_threads<'a>(recognizer: &'a mut Recognizer, samples: Vec<i16>, tx: Sender<Vec<vosk::Word<'a>>>) {
+fn split_threads(recognizer: &mut Recognizer, samples: Vec<i16>, thread_name: &str) {
     // might need to change if accuracy with multiple people speaking at the same time is bad
     //recognizer.set_partial_words(true);
 
@@ -188,19 +179,6 @@ fn split_threads<'a>(recognizer: &'a mut Recognizer, samples: Vec<i16>, tx: Send
         .single()
         .expect("Error in outputting result");
     let curses = binding.result;
+    fs::write(format!("remove_at_{}.json", thread_name), curses);
 
-    tx.send(curses);
-}
-
-fn split_threads_2<'a>(model: &'a Model, samples: Vec<i16>, tx: Sender<Vec<vosk::Word<'a>>>) {
-    let mut recognizer = Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
-    recognizer.accept_waveform(&samples);
-
-    let binding = recognizer
-        .final_result()
-        .single()
-        .expect("Error in outputting result");
-    let curses = binding.result;
-
-    tx.send(curses);
 }
