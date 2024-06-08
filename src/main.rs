@@ -1,4 +1,7 @@
 use std::collections::HashSet;
+use std::sync::mpsc::{channel, Sender};
+use std::thread;
+
 // For FFmpeg
 use std::{process::Command, time::Instant};
 
@@ -63,27 +66,39 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
         .collect::<hound::Result<Vec<i16>>>()
         .expect("Could not read WAV file");
 
-    // Create a recognizer
-    let mut recognizer = Recognizer::new(
-        &model,
-        reader.spec().sample_rate as f32,
-        )
-    .expect("Could not create recognizer");
+    let mut sample_chunks = samples.chunks_exact(samples.len() / 2);
 
-    recognizer.set_words(true);
-    // might need to change if accuracy with multiple people speaking at the same time is bad
-    //recognizer.set_partial_words(true);
+    let mut recognizer_1 = Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
+    let mut recognizer_2 = Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
 
-    // Feed the model the sound file. I do this all at once because I don't care about real-time output.
-    recognizer.accept_waveform(&samples);
+    let (tx, rx) = channel::<Vec<vosk::Word>>();
 
-    let binding = recognizer
-        .final_result()
-        .single()
-        .expect("Error in outputting result");
-    let curses = binding.result.as_slice();
+    recognizer_1.set_words(true);
 
-    remove_curses(curses, file_location, load_expletives());
+    let samples_half = sample_chunks.next().unwrap().to_vec();
+
+    let tx_clone = tx.clone();
+
+    thread::spawn(move || split_threads(&mut recognizer_1, samples_half, tx_clone));
+
+
+    recognizer_2.set_words(true);
+
+    let samples_half = sample_chunks.next().unwrap().to_vec();
+
+    let tx_clone = tx;
+
+    thread::spawn(move || split_threads(&mut recognizer_2, samples_half, tx_clone));
+
+
+    let mut times_in: Vec<vosk::Word> = Vec::new();
+
+    times_in.append(&mut rx.recv().unwrap());
+    times_in.append(&mut rx.recv().unwrap());
+
+    let curse_list = load_expletives();
+
+    remove_curses(times_in.as_slice(), file_location, curse_list)
 }
 
 // Calls the FFmpeg command line program to remove the audio of the expletives from the video or audio file the user puts in
@@ -95,18 +110,16 @@ fn remove_curses(times_in: &[vosk::Word], file_location: &str, curses: HashSet<S
 
     // This loops over each expletive in times_in and converts the data into a filter FFmpeg can use.
     for curse in times_in {
-        
         if curses.contains(curse.word) {
             filter_string.push_str(&format!(
                 "volume=enable='between(t,{},{})':volume=0, ",
                 curse.start, curse.end
             ));
-            
+
             println!("Removed {} at {} to {}", curse.word, curse.start, curse.end);
 
             number_of_curses += 1;
         }
-        
     }
 
     // If left unedited, the last two characters would be ', ', which we don't want.
@@ -161,4 +174,20 @@ fn load_expletives() -> HashSet<String> {
         let file = File::open(filename)?;
         Ok(io::BufReader::new(file).lines())
     }
+}
+
+fn split_threads<'a>(recognizer: &'a mut Recognizer, samples: Vec<i16>, tx: Sender<Vec<vosk::Word<'a>>>) {
+    // might need to change if accuracy with multiple people speaking at the same time is bad
+    //recognizer.set_partial_words(true);
+
+    // Feed the model the sound file. I do this all at once because I don't care about real-time output.
+    recognizer.accept_waveform(&samples);
+
+    let binding = recognizer
+        .final_result()
+        .single()
+        .expect("Error in outputting result");
+    let curses = binding.result;
+
+    tx.send(curses);
 }
