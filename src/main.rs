@@ -191,3 +191,16 @@ fn split_threads<'a>(recognizer: &'a mut Recognizer, samples: Vec<i16>, tx: Send
 
     tx.send(curses);
 }
+
+fn split_threads_2<'a>(model: &'a Model, samples: Vec<i16>, tx: Sender<Vec<vosk::Word<'a>>>) {
+    let mut recognizer = Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
+    recognizer.accept_waveform(&samples);
+
+    let binding = recognizer
+        .final_result()
+        .single()
+        .expect("Error in outputting result");
+    let curses = binding.result;
+
+    tx.send(curses);
+}
