@@ -1,8 +1,8 @@
+use serde_json::json;
 use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::thread::JoinHandle;
 use std::{fs, thread};
-use serde_json::json;
 
 // For FFmpeg
 use std::{process::Command, time::Instant};
@@ -73,15 +73,17 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
     let mut threads: Vec<JoinHandle<()>> = Vec::new();
 
     for i in [..2] {
-        let mut recognizer = Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
+        let mut recognizer =
+            Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
         recognizer.set_words(true);
 
         let samples_half = sample_chunks.next().unwrap().to_vec();
 
-        let thread = thread::spawn(move || split_threads(&mut recognizer, samples_half, &format!("{:?}", i)));
+        let thread = thread::spawn(move || {
+            split_threads(&mut recognizer, samples_half, &format!("{:?}", i))
+        });
 
         threads.push(thread);
-
     }
 
     for thread in threads {
@@ -90,13 +92,14 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
 
     let mut times_in: Vec<vosk::Word> = Vec::new();
 
-
-    for i in [..2]{
-        let file = fs::read_to_string(format!("remove_at_{:?}.json", i)).expect("Error opening json");
-        let mut json: Vec<vosk::Word> = serde_json::from_str(&file).expect("Error in deserializing json");
+    // TODO: Initialize a list or vector of two Strings here to use in the loop below
+    for i in [..2] {
+        let file =
+            fs::read_to_string(format!("remove_at_{:?}.json", i)).expect("Error opening json");
+        let mut json: Vec<vosk::Word> =
+            serde_json::from_str(&file).expect("Error in deserializing json");
         times_in.append(&mut json);
     }
-
 
     let curse_list = load_expletives();
 
@@ -179,7 +182,6 @@ fn load_expletives() -> HashSet<String> {
 }
 
 fn split_threads(recognizer: &mut Recognizer, samples: Vec<i16>, thread_name: &str) {
-    
     // Feed the model the sound file. I do this all at once because I don't care about real-time output.
     recognizer.accept_waveform(&samples);
 
@@ -191,6 +193,12 @@ fn split_threads(recognizer: &mut Recognizer, samples: Vec<i16>, thread_name: &s
 
     println!("{:?}", curses);
 
-    fs::write(format!("remove_at_{}.json", thread_name), json!(curses).to_string()).expect(&format!("Error outputting thread {} json to file", thread_name));
-
+    fs::write(
+        format!("remove_at_{}.json", thread_name),
+        json!(curses).to_string(),
+    )
+    .expect(&format!(
+        "Error outputting thread {} json to file",
+        thread_name
+    ));
 }
