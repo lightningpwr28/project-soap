@@ -12,7 +12,7 @@ use vosk::{Model, Recognizer};
 
 // For loading list of swear words
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Read};
 use std::path::Path;
 
 fn main() {
@@ -80,6 +80,8 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
 
         let samples_half = sample_chunks.next().unwrap().to_vec();
 
+        let thread_file_location = file_location.clone();
+
         let thread = thread::spawn(move || {
             split_threads(&mut recognizer, samples_half, &format!("{:?}", i))
         });
@@ -97,7 +99,7 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
     let mut counter = 0;
     let offset: f32 = (samples.len() as f32) / (thread_number as f32);
     for i in file_contents.iter_mut() {
-        *i = fs::read_to_string(format!("test\\remove_at_{:?}.json", counter)).expect(&format!("Error opening json file at remove_at_{:?}.json", counter));
+        *i = fs::read_to_string(format!("temp\\remove_at_{:?}_{}.json", counter, file_location)).expect(&format!("Error opening json file at remove_at_{:?}_{}.json", counter, file_location));
         let mut json: Vec<vosk::Word> =
             serde_json::from_str(i).expect("Error in deserializing json");
         
@@ -112,12 +114,13 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
 
     let curse_list = load_expletives();
 
-    remove_curses(times_in.as_slice(), file_location, curse_list)
+    let clean_file_location = remove_curses(times_in.as_slice(), file_location, curse_list);
+    clean_up(file_location, &clean_file_location, thread_number);
 }
 
 // Calls the FFmpeg command line program to remove the audio of the expletives from the video or audio file the user puts in
 // times_in is an array of locations where expletives are in the file at file_location
-fn remove_curses(times_in: &[vosk::Word], file_location: &str, curses: HashSet<String>) {
+fn remove_curses(times_in: &[vosk::Word], file_location: &str, curses: HashSet<String>) -> String {
     // Stores the list of filters that determine which audio segments will be cut out
     let mut filter_string = String::new();
     let mut number_of_curses = 0;
@@ -165,6 +168,7 @@ fn remove_curses(times_in: &[vosk::Word], file_location: &str, curses: HashSet<S
     println!("{:?}", out);
 
     println!("Removed {} expletives.", number_of_curses);
+    return file_location_string;
 }
 
 fn load_expletives() -> HashSet<String> {
@@ -201,7 +205,7 @@ fn split_threads(recognizer: &mut Recognizer, samples: Vec<i16>, thread_name: &s
     let curses = binding.result;
 
     fs::write(
-        format!("test\\remove_at_{}.json", thread_name),
+        format!("temp\\remove_at_{}.json", thread_name),
         json!(curses).to_string(),
     )
     .expect(&format!(
@@ -210,4 +214,21 @@ fn split_threads(recognizer: &mut Recognizer, samples: Vec<i16>, thread_name: &s
     ));
 
     println!("Thread {} done!", thread_name);
+}
+
+fn clean_up(file_location: &str, clean_file_location: &str, thread_number: usize) {
+    
+    let clean_file = fs::read(clean_file_location).expect("Error reading clean file for clean up");
+    fs::write(file_location, clean_file).expect("Error copying clean file to original");
+
+    for i in 0..thread_number {
+        let path = format!("temp\\remove_at_{:?}_{}.json", i, file_location);
+        fs::remove_file(path.clone()).expect(&format!("Unable to remove file at {}", path));
+    }
+
+
+
+
+
+
 }
