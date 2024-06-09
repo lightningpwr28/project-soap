@@ -29,7 +29,7 @@ fn main() {
 
     let end = Instant::now();
 
-    println!("Filtering took {:#?}", end.duration_since(start) / 60);
+    println!("Filtering took {:#?}", end.duration_since(start));
 }
 
 fn preprocess_audio(file_location: &str) -> String {
@@ -95,9 +95,8 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
     let mut file_contents: Vec<String> = vec![String::new(); thread_number];
 
     let mut counter = 0;
-
     for i in file_contents.iter_mut() {
-        *i = fs::read_to_string(format!("remove_at_{:?}.json", counter)).expect(&format!("Error opening json file at remove_at_{:?}.json", counter));
+        *i = fs::read_to_string(format!("test\\remove_at_{:?}.json", counter)).expect(&format!("Error opening json file at remove_at_{:?}.json", counter));
         let mut json: Vec<vosk::Word> =
             serde_json::from_str(i).expect("Error in deserializing json");
         times_in.append(&mut json);
@@ -196,7 +195,7 @@ fn split_threads(recognizer: &mut Recognizer, samples: Vec<i16>, thread_name: &s
     let curses = binding.result;
 
     fs::write(
-        format!("remove_at_{}.json", thread_name),
+        format!("test\\remove_at_{}.json", thread_name),
         json!(curses).to_string(),
     )
     .expect(&format!(
