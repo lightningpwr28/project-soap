@@ -95,12 +95,18 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
     let mut file_contents: Vec<String> = vec![String::new(); thread_number];
 
     let mut counter = 0;
+    let offset: f32 = (samples.len() as f32) / (thread_number as f32);
     for i in file_contents.iter_mut() {
         *i = fs::read_to_string(format!("test\\remove_at_{:?}.json", counter)).expect(&format!("Error opening json file at remove_at_{:?}.json", counter));
         let mut json: Vec<vosk::Word> =
             serde_json::from_str(i).expect("Error in deserializing json");
+        
+        for word in json.iter_mut() {
+            word.start += (offset / 16000.) * counter as f32;
+            word.end += (offset / 16000.) * counter as f32;
+        }
+        
         times_in.append(&mut json);
-
         counter += 1;
     }
 
