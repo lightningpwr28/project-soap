@@ -1,5 +1,4 @@
 use serde_json::json;
-use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::thread::JoinHandle;
 use std::{fs, thread};
@@ -68,11 +67,13 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
         .collect::<hound::Result<Vec<i16>>>()
         .expect("Could not read WAV file");
 
-    let mut sample_chunks = samples.chunks_exact(samples.len() / 2);
+    let thread_number = thread::available_parallelism().expect("Error getting system available parallelism").into();
+    let mut sample_chunks = samples.chunks_exact(samples.len() / thread_number);
 
     let mut threads: Vec<JoinHandle<()>> = Vec::new();
+    
 
-    for i in [..2] {
+    for i in 0..thread_number {
         let mut recognizer =
             Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
         recognizer.set_words(true);
@@ -87,18 +88,21 @@ fn find_and_remove_curses(file_location: &str, preprocessed_file_location: &str,
     }
 
     for thread in threads {
-        thread.join();
+        thread.join().expect("Error joining threads");
     }
 
     let mut times_in: Vec<vosk::Word> = Vec::new();
+    let mut file_contents: Vec<String> = vec![String::new(); thread_number];
 
-    // TODO: Initialize a list or vector of two Strings here to use in the loop below
-    for i in [..2] {
-        let file =
-            fs::read_to_string(format!("remove_at_{:?}.json", i)).expect("Error opening json");
+    let mut counter = 0;
+
+    for i in file_contents.iter_mut() {
+        *i = fs::read_to_string(format!("remove_at_{:?}.json", counter)).expect(&format!("Error opening json file at remove_at_{:?}.json", counter));
         let mut json: Vec<vosk::Word> =
-            serde_json::from_str(&file).expect("Error in deserializing json");
+            serde_json::from_str(i).expect("Error in deserializing json");
         times_in.append(&mut json);
+
+        counter += 1;
     }
 
     let curse_list = load_expletives();
@@ -191,8 +195,6 @@ fn split_threads(recognizer: &mut Recognizer, samples: Vec<i16>, thread_name: &s
         .expect("Error in outputting result");
     let curses = binding.result;
 
-    println!("{:?}", curses);
-
     fs::write(
         format!("remove_at_{}.json", thread_name),
         json!(curses).to_string(),
@@ -201,4 +203,6 @@ fn split_threads(recognizer: &mut Recognizer, samples: Vec<i16>, thread_name: &s
         "Error outputting thread {} json to file",
         thread_name
     ));
+
+    println!("Thread {} done!", thread_name);
 }
