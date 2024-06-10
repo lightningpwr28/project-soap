@@ -16,8 +16,7 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 fn main() {
-    let file_location =
-        String::from("Extra Crispy - Crispy reacts to Daily Dose of Internet.webm");
+    let file_location = String::from("Extra Crispy - Crispy reacts to Daily Dose of Internet.webm");
     let model_location = String::from("vosk/model/vosk-model-en-us-0.22-lgraph");
 
     let start = Instant::now();
@@ -42,7 +41,7 @@ impl Cleaner {
         Cleaner {
             model_location,
             file_location: file_location.clone(),
-            preprocessed_file_location: format!("temp/{}.wav", file_location.clone()),
+            preprocessed_file_location: format!("temp\\{}.wav", file_location.clone()),
         }
     }
 
@@ -112,10 +111,11 @@ impl Cleaner {
         let offset: f32 = (samples.len() as f32) / (thread_number as f32);
         for i in file_contents.iter_mut() {
             *i = fs::read_to_string(format!("temp/{:?}_'{}'.json", counter, self.file_location))
-            .expect(&format!(
-                "Error opening json file at {:?}_{}.json",
-                counter, self.file_location
-            ));
+                .expect(&format!(
+                    "Error opening json file at {:?}_{}.json",
+                    counter, self.file_location
+                ));
+
             let mut json: Vec<vosk::Word> =
                 serde_json::from_str(i).expect("Error in deserializing json");
 
@@ -159,7 +159,7 @@ impl Cleaner {
 
         println!("{}", filter_string);
 
-        let mut file_location_string = self.file_location.to_string();
+        let mut file_location_string = "temp\\".to_string() + &self.file_location.to_string();
         file_location_string.insert_str(
             file_location_string
                 .find('.')
@@ -226,7 +226,10 @@ impl Cleaner {
         let name = format!("temp/{}_'{}'.json", thread_name, file_location);
         println!("{}", name);
 
-        fs::write(name, json!(curses).to_string()).expect(&format!("Error outputting thread {} json to file", thread_name));
+        fs::write(name, json!(curses).to_string()).expect(&format!(
+            "Error outputting thread {} json to file",
+            thread_name
+        ));
 
         println!("Thread {} done!", thread_name);
     }
@@ -237,10 +240,10 @@ impl Cleaner {
         fs::write(self.file_location.clone(), clean_file)
             .expect("Error copying clean file to original");
 
-        let paths = fs::read_dir("./temp").unwrap();
+        let paths = fs::read_dir(".\\temp").unwrap();
         for file in paths {
             let path_str: String =
-                String::from(file.unwrap().path().file_name().unwrap().to_str().unwrap());
+                String::from(file.unwrap().path().display().to_string());
 
             if path_str.contains(&self.file_location) {
                 fs::remove_file(path_str.clone())
@@ -251,10 +254,9 @@ impl Cleaner {
 
     fn make_temp_dir() {
         let here = fs::canonicalize("./").expect("Error in canonicalizing temp path");
-        let temp_dir_location =  here.display().to_string() + "\\temp";
+        let temp_dir_location = here.display().to_string() + "\\temp";
         if !std::path::Path::new(&temp_dir_location).exists() {
             fs::create_dir(temp_dir_location).expect("Error in creating temp dir");
         }
-        
     }
 }
