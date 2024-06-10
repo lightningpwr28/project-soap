@@ -4,7 +4,7 @@ Project soap is an open source command line program to remove certain expletives
 
 ## TODO
 
-1. Make structure of generated files cleaner and remove at program finish
+1. Abstract the locations so that the program can work on any file from any location
 2. Add a command line interface
 3. Clean up code
 4. Package for release
