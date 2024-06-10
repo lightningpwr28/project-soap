@@ -34,15 +34,21 @@ struct Cleaner {
     model_location: String,
     file_location: String,
     preprocessed_file_location: String,
+    file_name: String,
 }
 impl Cleaner {
     fn new(model_location: String, file_location: String) -> Cleaner {
         Cleaner::make_temp_dir();
+        let path = Path::new(&file_location);
+        let file_name = path.file_name().and_then(|name| name.to_str()).expect("Error getting file name").to_string();
         Cleaner {
             model_location,
             file_location: file_location.clone(),
-            preprocessed_file_location: format!("temp\\{}.wav", file_location.clone()),
+            preprocessed_file_location: format!("temp\\{}.wav", file_name.clone()),
+            file_name
         }
+
+        
     }
 
     fn preprocess_audio(&self) {
@@ -91,7 +97,7 @@ impl Cleaner {
 
             let samples_half = sample_chunks.next().unwrap().to_vec();
 
-            let loc = self.file_location.clone();
+            let loc = self.file_name.clone();
 
             let thread = thread::spawn(move || {
                 Cleaner::split_threads(loc, &mut recognizer, samples_half, &format!("{:?}", i))
@@ -110,10 +116,10 @@ impl Cleaner {
         let mut counter = 0;
         let offset: f32 = (samples.len() as f32) / (thread_number as f32);
         for i in file_contents.iter_mut() {
-            *i = fs::read_to_string(format!("temp/{:?}_'{}'.json", counter, self.file_location))
+            *i = fs::read_to_string(format!("temp/{:?}_'{}'.json", counter, self.file_name))
                 .expect(&format!(
                     "Error opening json file at {:?}_{}.json",
-                    counter, self.file_location
+                    counter, self.file_name
                 ));
 
             let mut json: Vec<vosk::Word> =
@@ -159,7 +165,7 @@ impl Cleaner {
 
         println!("{}", filter_string);
 
-        let mut file_location_string = "temp\\".to_string() + &self.file_location.to_string();
+        let mut file_location_string = "temp\\".to_string() + &self.file_name.to_string();
         file_location_string.insert_str(
             file_location_string
                 .find('.')
@@ -209,7 +215,7 @@ impl Cleaner {
     }
 
     fn split_threads(
-        file_location: String,
+        file_name: String,
         recognizer: &mut Recognizer,
         samples: Vec<i16>,
         thread_name: &str,
@@ -223,7 +229,7 @@ impl Cleaner {
             .expect("Error in outputting result");
         let curses = binding.result;
 
-        let name = format!("temp/{}_'{}'.json", thread_name, file_location);
+        let name = format!("temp/{}_'{}'.json", thread_name, file_name);
         println!("{}", name);
 
         fs::write(name, json!(curses).to_string()).expect(&format!(
@@ -245,7 +251,7 @@ impl Cleaner {
             let path_str: String =
                 String::from(file.unwrap().path().display().to_string());
 
-            if path_str.contains(&self.file_location) {
+            if path_str.contains(&self.file_name) {
                 fs::remove_file(path_str.clone())
                     .expect(&format!("Unable to remove file at {}", path_str));
             }
