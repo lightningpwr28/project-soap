@@ -1,4 +1,5 @@
 mod cli;
+use clap::Parser;
 
 use serde_json::json;
 use std::collections::HashSet;
@@ -18,12 +19,14 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 fn main() {
-    let file_location = String::from("Extra Crispy - Crispy reacts to Daily Dose of Internet.webm");
-    let model_location = String::from("vosk/model/vosk-model-en-us-0.22-lgraph");
+    // let file_location = String::from("Extra Crispy - Crispy reacts to Daily Dose of Internet.webm");
+    // let model_location = String::from("vosk/model/vosk-model-en-us-0.22-lgraph");
+
+    let args = cli::Args::parse();
 
     let start = Instant::now();
 
-    let cleaner = Cleaner::new(model_location, file_location);
+    let cleaner = Cleaner::from_args(args);
     cleaner.preprocess_audio();
     cleaner.find_and_remove_curses();
 
@@ -37,20 +40,54 @@ struct Cleaner {
     file_location: String,
     preprocessed_file_location: String,
     file_name: String,
+    thread_number: usize,
+    out_location: String,
 }
 impl Cleaner {
     fn new(model_location: String, file_location: String) -> Cleaner {
         Cleaner::make_temp_dir();
         let path = Path::new(&file_location);
-        let file_name = path.file_name().and_then(|name| name.to_str()).expect("Error getting file name").to_string();
+        let file_name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .expect("Error getting file name")
+            .to_string();
+        let thread_number = std::thread::available_parallelism()
+            .expect("Error getting system available parallelism")
+            .into();
         Cleaner {
             model_location,
             file_location: file_location.clone(),
             preprocessed_file_location: format!("temp\\{}.wav", file_name.clone()),
-            file_name
+            file_name,
+            thread_number,
+            out_location: file_location,
         }
+    }
 
-        
+    fn from_args(args: cli::Args) -> Cleaner {
+        Cleaner::make_temp_dir();
+        let path = Path::new(&args.file_in);
+        let file_name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .expect("Error getting file name")
+            .to_string();
+
+        let out_location: String;
+        if args.out == "" {
+            out_location = args.file_in.clone();
+        } else {
+            out_location = args.out;
+        }
+        Cleaner {
+            model_location: args.model,
+            file_location: args.file_in,
+            preprocessed_file_location: format!("temp\\{}.wav", file_name.clone()),
+            file_name,
+            thread_number: args.threads,
+            out_location,
+        }
     }
 
     fn preprocess_audio(&self) {
@@ -85,14 +122,11 @@ impl Cleaner {
             .collect::<hound::Result<Vec<i16>>>()
             .expect("Could not read WAV file");
 
-        let thread_number = thread::available_parallelism()
-            .expect("Error getting system available parallelism")
-            .into();
-        let mut sample_chunks = samples.chunks_exact(samples.len() / thread_number);
+        let mut sample_chunks = samples.chunks_exact(samples.len() / self.thread_number);
 
         let mut threads: Vec<JoinHandle<()>> = Vec::new();
 
-        for i in 0..thread_number {
+        for i in 0..self.thread_number {
             let mut recognizer =
                 Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");
             recognizer.set_words(true);
@@ -113,10 +147,10 @@ impl Cleaner {
         }
 
         let mut times_in: Vec<vosk::Word> = Vec::new();
-        let mut file_contents: Vec<String> = vec![String::new(); thread_number];
+        let mut file_contents: Vec<String> = vec![String::new(); self.thread_number];
 
         let mut counter = 0;
-        let offset: f32 = (samples.len() as f32) / (thread_number as f32);
+        let offset: f32 = (samples.len() as f32) / (self.thread_number as f32);
         for i in file_contents.iter_mut() {
             *i = fs::read_to_string(format!("temp/{:?}_'{}'.json", counter, self.file_name))
                 .expect(&format!(
@@ -183,7 +217,7 @@ impl Cleaner {
             .arg("-af")
             .arg(filter_string)
             .args(["-c:v", "copy"])
-            .arg(&format!("{}", file_location_string))
+            .arg(&format!("{}", self.out_location))
             .output()
             .expect("failed to execute process");
 
@@ -250,8 +284,7 @@ impl Cleaner {
 
         let paths = fs::read_dir(".\\temp").unwrap();
         for file in paths {
-            let path_str: String =
-                String::from(file.unwrap().path().display().to_string());
+            let path_str: String = String::from(file.unwrap().path().display().to_string());
 
             if path_str.contains(&self.file_name) {
                 fs::remove_file(path_str.clone())
