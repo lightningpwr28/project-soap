@@ -9,4 +9,5 @@ edition = "2021"
 vosk = "0.2.0"
 serde_json = "1.0.117"
 hound = "3.5.1"
+clap = "4.5.7"
 
