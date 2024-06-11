@@ -23,6 +23,7 @@ pub struct Args {
     pub threads: usize,
 }
 
+// Input validator - checks if the model path exists
 fn model_location_exists(m: &str) -> Result<String, String> {
     let model_path = Path::new(m);
 
@@ -33,6 +34,7 @@ fn model_location_exists(m: &str) -> Result<String, String> {
     }
 }
 
+//Input validator - checks if the thread number is less than the total number of threads the system has
 fn thread_number_in_range(t: &str) -> Result<usize, String> {
     let thread_number: usize = t
         .parse()
