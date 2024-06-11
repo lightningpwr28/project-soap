@@ -1,3 +1,5 @@
+mod cli;
+
 use serde_json::json;
 use std::collections::HashSet;
 use std::thread::JoinHandle;
