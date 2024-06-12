@@ -120,7 +120,7 @@ impl Cleaner {
             file_name,
             thread_number: args.threads,
             out_location,
-            overwrite
+            overwrite,
         }
     }
 
@@ -235,7 +235,7 @@ impl Cleaner {
         let curse_list = Cleaner::load_expletives();
 
         // we give the clean file location so we can copy it's contents to where the user wants
-        let clean_file_location = self.remove_curses(times_in.as_slice(), curse_list);
+        self.remove_curses(times_in.as_slice(), curse_list);
         self.clean_up();
     }
 
@@ -344,13 +344,14 @@ impl Cleaner {
         // if we are overwriting the original file
         if self.overwrite {
             // read in the clean file
-            let clean_file = fs::read(self.out_location.clone()).expect("Error reading clean file for clean up");
+            let clean_file =
+                fs::read(self.out_location.clone()).expect("Error reading clean file for clean up");
 
             // then write it to the original
             fs::write(self.file_location.clone(), clean_file)
-            .expect("Error copying clean file to original");
+                .expect("Error copying clean file to original");
         }
-        
+
         let paths = fs::read_dir(".\\temp").unwrap();
         // for each of the files in the temp dir
         for file in paths {
