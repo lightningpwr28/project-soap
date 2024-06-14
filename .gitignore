@@ -2,3 +2,8 @@
 /vosk
 /test
 /temp
+installer/WinInstaller/.vs
+installer/WinInstaller/bin
+installer/WinInstaller/obj
+installer/WinInstaller/WinInstaller.sln
+installer/WinInstaller/WinInstaller.wixproj
