@@ -30,7 +30,7 @@ fn model_location_exists(m: &str) -> Result<String, String> {
     if model_path.exists() {
         Ok(m.to_string())
     } else {
-        Err(format!("Model path {m} does not exist"))
+        Err(format!("Model path ./{m} does not exist"))
     }
 }
 
