@@ -13,7 +13,7 @@
 		<ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
 			<Component>
 				<File
-					Source="C:\Users\squid\Desktop\Projects\project-soap\target\release\project-soap.exe" />
+					Source="..\..\target\release\project-soap.exe" />
 				<!-- Add the installation folder to the system PATH environment variable -->
 				<Environment Id="AddToPath" Name="PATH" Value="[INSTALLFOLDER]" Permanent="no"
 					Part="last" Action="set" System="yes" />
@@ -21,21 +21,21 @@
 			</Component>
 			<Component>
 				<File
-					Source="C:\Users\squid\Desktop\Projects\project-soap\target\release\libgcc_s_seh-1.dll" />
+					Source="..\..\target\release\libgcc_s_seh-1.dll" />
 			</Component>
 			<Component>
 				<File
-					Source="C:\Users\squid\Desktop\Projects\project-soap\target\release\libstdc++-6.dll" />
+					Source="..\..\target\release\libstdc++-6.dll" />
 
 			</Component>
 			<Component>
 				<File
-					Source="C:\Users\squid\Desktop\Projects\project-soap\target\release\libvosk.dll" />
+					Source="..\..\target\release\libvosk.dll" />
 
 			</Component>
 			<Component>
 				<File
-					Source="C:\Users\squid\Desktop\Projects\project-soap\target\release\libwinpthread-1.dll" />
+					Source="..\..\target\release\libwinpthread-1.dll" />
 
 			</Component>
 
