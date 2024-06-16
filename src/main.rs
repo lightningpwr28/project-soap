@@ -17,7 +17,7 @@ use vosk::{Model, Recognizer};
 // For loading list of swear words
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{self, BufRead, *};
+use std::io::{self, BufRead};
 use std::path::Path;
 
 fn main() {
@@ -81,36 +81,6 @@ struct Cleaner {
     overwrite: bool,
 }
 impl Cleaner {
-    // a construstor - not used now, but maybe later
-    fn new(model_location: String, file_location: String) -> Cleaner {
-        // start by making the temp directory - without this, writing the temp files will fail
-        Cleaner::make_temp_dir();
-
-        // gets the file's name by itself
-        let path = Path::new(&file_location);
-        let file_name = path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .expect("Error getting file name")
-            .to_string();
-
-        // gets the number of the system's threads
-        let thread_number = std::thread::available_parallelism()
-            .expect("Error getting system available parallelism")
-            .into();
-
-        // makes and returns the Cleaner struct
-        Cleaner {
-            model_location,
-            file_location: file_location.clone(),
-            preprocessed_file_location: format!("temp\\{}.wav", file_name.clone()),
-            file_name,
-            thread_number,
-            out_location: file_location,
-            overwrite: true,
-        }
-    }
-
     // a constructor using the CLI arguments
     fn from_args(args: cli::Args) -> Cleaner {
         // start by making the temp directory - without this, writing the temp files will fail
@@ -196,7 +166,7 @@ impl Cleaner {
         // a vector to make it so we can wait for all the threads to finish before making the filters for ffmpeg
         let mut threads: Vec<JoinHandle<()>> = Vec::new();
 
-        'initialize_vectors: for i in 0..self.thread_number {
+        for i in 0..self.thread_number {
             //make and configure a new Recognizer
             let mut recognizer =
                 Recognizer::new(&model, 16000 as f32).expect("Could not create recognizer");

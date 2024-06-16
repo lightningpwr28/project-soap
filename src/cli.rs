@@ -2,7 +2,7 @@
 use clap::Parser;
 use std::path::Path;
 use std::fs::File;
-use std::io::{self, Write, Cursor};
+use std::io::{self, Cursor};
 use reqwest::blocking::get;
 use zip::read::ZipArchive;
 
