@@ -21,6 +21,7 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 fn main() {
+    std::env::set_var("RUST_BACKTRACE", "full");
     // let file_location = String::from("Extra Crispy - Crispy reacts to Daily Dose of Internet.webm");
     // let model_location = String::from("vosk/model/vosk-model-en-us-0.22-lgraph");
 

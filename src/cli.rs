@@ -86,9 +86,11 @@ pub fn get_model(model: &str) {
         _ => panic!("It should be impossible to get here"),
     };
 
-    println!("Getting model {} at {}", model, url);
-
     let output_dir = Path::new("model");
+    
+    std::fs::remove_dir_all(output_dir).expect("Error removing current model");
+
+    println!("Getting model {} at {}", model, url);
 
     // Download the ZIP file
     let zip_data = download_file(url).expect(&format!("Error downloading file: {}", url));
@@ -96,7 +98,11 @@ pub fn get_model(model: &str) {
     // Unzip the downloaded file
     unzip_file(&zip_data, output_dir).expect("Error unzipping file");
 
-    unwrap_model(output_dir).expect("Error unwrapping model directories");
+    let mut entry = std::fs::read_dir(output_dir).expect("error getting downloaded model directory");
+    
+    let model_dir = entry.next().unwrap().unwrap();
+
+    unwrap_model(&model_dir.path()).expect("Error unwrapping model directories");
 
     println!("Download and extraction complete!");
 }
@@ -148,6 +154,8 @@ fn unwrap_model(model_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
         // Move the entry to the parent folder
         std::fs::rename(entry_path, new_path)?;
     }
+
+    std::fs::remove_dir(model_dir)?;
 
     Ok(())
 }
