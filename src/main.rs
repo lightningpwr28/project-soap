@@ -196,9 +196,13 @@ impl Cleaner {
         let mut times_in: Vec<vosk::Word> = Vec::new();
         let mut file_contents: Vec<String> = vec![String::new(); self.thread_number]; // we need this out here because having a temp var in the loop wouldn't have a long enough lifetime
 
+        // HashSet to hold list of no no words
+        let curse_list = Cleaner::load_expletives();
+
         // we use the counter to keep track of the thread number we're currently on - prob not the best way to do that
         let mut counter = 0;
         let offset: f32 = (samples.len() as f32) / (self.thread_number as f32);
+        let mut number_of_curses = 0;
         for i in file_contents.iter_mut() {
             // read the temp json file into i - the format! call probably isn't the best way to do this
             *i = fs::read_to_string(format!("temp/{:?}_'{}'.json", counter, self.file_name))
@@ -213,43 +217,41 @@ impl Cleaner {
 
             // offsets the word timestamps - each recognizer thinks it's at the beginning of the audio, so without this, there's just a bunch of holes at the beginning of the input file
             for word in json.iter_mut() {
-                // TODO: Check the word here instead of remove_curses
-                word.start += (offset / 16000.) * counter as f32;
-                word.end += (offset / 16000.) * counter as f32;
+
+                if curse_list.contains(word.word) {
+                    continue;
+                } else {
+                    word.start += (offset / 16000.) * counter as f32;
+                    word.end += (offset / 16000.) * counter as f32;
+                    times_in.push(word.clone());
+                    number_of_curses += 1;
+                    #[cfg(debug_assertions)]
+                    println!("Removed {} at {} to {}", word.word, word.start, word.end);
+                }
             }
 
-            times_in.append(&mut json);
             counter += 1;
         }
 
-        // HashSet to hold list of no no words
-        let curse_list = Cleaner::load_expletives();
-
         // we give the clean file location so we can copy it's contents to where the user wants
-        self.remove_curses(times_in.as_slice(), curse_list);
+        self.remove_curses(times_in.as_slice());
         self.clean_up();
+        println!("Removed {} expletives.", number_of_curses);
     }
 
     // checks each word against the HashSet, makes a filter string to remove it if it is on the list, and then calls ffmpeg to remove it
-    fn remove_curses(&self, times_in: &[vosk::Word], curses: HashSet<String>) {
+    fn remove_curses(&self, times_in: &[vosk::Word]) {
         // Stores the list of filters that determine which audio segments will be cut out
         let mut filter_string = String::new();
-        let mut number_of_curses = 0;
+
 
         // This loops over each expletive in times_in and converts the data into a filter FFmpeg can use.
         for curse in times_in {
-            if curses.contains(curse.word) {
-                filter_string.push_str(&format!(
-                    // I really need to read ffmpeg's docs or something, because this is almost greek to me
-                    "volume=enable='between(t,{},{})':volume=0, ",
-                    curse.start, curse.end
-                ));
-
-                #[cfg(debug_assertions)]
-                println!("Removed {} at {} to {}", curse.word, curse.start, curse.end);
-
-                number_of_curses += 1;
-            }
+            filter_string.push_str(&format!(
+                // I really need to read ffmpeg's docs or something, because this is almost greek to me
+                "volume=enable='between(t,{},{})':volume=0, ",
+                curse.start, curse.end
+            ));
         }
 
         // If left unedited, the last two characters would be ', ', which we don't want.
@@ -273,7 +275,6 @@ impl Cleaner {
         #[cfg(debug_assertions)]
         println!("{:?}", out);
 
-        println!("Removed {} expletives.", number_of_curses);
     }
 
     // loads the expletives from a text file
