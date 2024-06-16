@@ -86,6 +86,8 @@ pub fn get_model(model: &str) {
         _ => panic!("It should be impossible to get here"),
     };
 
+    println!("Getting model {} at {}", model, url);
+
     let output_dir = Path::new("model");
 
     // Download the ZIP file
