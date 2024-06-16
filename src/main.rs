@@ -88,24 +88,18 @@ impl Cleaner {
             .to_string();
 
         #[cfg(unix)]
-        let temp_dir_name = format!("/temp'{}'", file_name);
+        let temp_dir_name = format!("./temp'{}'", file_name);
 
         #[cfg(windows)]
-        let temp_dir_name = format!("\\temp'{}'", file_name);
+        let temp_dir_name = format!(".\\temp'{}'", file_name);
 
         // start by making the temp directory - without this, writing the temp files will fail
         Cleaner::make_temp_dir(temp_dir_name.clone());
 
-        let overwrite: bool;
-        let mut out_location = "temp/".to_string() + &file_name.to_string();
+        let mut overwrite: bool = true;
+        let mut out_location = temp_dir_name.clone() + "\\" + &file_name.to_string();
         // if the user didn't set a special out location
-        if args.out == "" {
-            out_location.insert_str(
-                out_location.find('.').expect("Couldn't find file type"),
-                "-clean",
-            );
-            overwrite = true;
-        } else {
+        if args.out != "" {
             out_location = args.out;
             overwrite = false;
         }
@@ -115,7 +109,7 @@ impl Cleaner {
             model_location: args.model,
             file_location: file_in,
             preprocessed_file_location: format!(
-                ".{}\\{}.wav",
+                "{}\\{}.wav",
                 temp_dir_name.clone(),
                 file_name.clone()
             ),
@@ -336,10 +330,10 @@ impl Cleaner {
 
         // makes the temp json file name
         #[cfg(unix)]
-        let name = format!(".{}/{}.json", temp_dir_name, thread_name);
+        let name = format!("{}/{}.json", temp_dir_name, thread_name);
 
         #[cfg(windows)]
-        let name = format!(".{}\\{}.json", temp_dir_name, thread_name);
+        let name = format!("{}\\{}.json", temp_dir_name, thread_name);
 
         // writes it to file
         fs::write(name, json!(curses).to_string()).expect(&format!(
@@ -359,13 +353,13 @@ impl Cleaner {
             let clean_file =
                 fs::read(self.out_location.clone()).expect("Error reading clean file for clean up");
 
+            println!("{}", self.file_location);
             // then write it to the original
             fs::write(self.file_location.clone(), clean_file)
                 .expect("Error copying clean file to original");
         }
 
-        println!("{}", self.temp_dir_name);
-        fs::remove_dir_all(".".to_owned() + &self.temp_dir_name.clone()).expect("Error removing temp dir");
+        fs::remove_dir_all(self.temp_dir_name.clone()).expect("Error removing temp dir");
     }
 
     // makes the temp dir if it isn't there already
@@ -373,8 +367,11 @@ impl Cleaner {
         // gets the absolute path to here
         let here = fs::canonicalize("./").expect("Error in canonicalizing temp path");
 
+        let mut without_dot = temp_dir_name.clone();
+        without_dot.remove(0);
+
         // add the temp dir as a string
-        let temp_dir_location = here.display().to_string() + &temp_dir_name;
+        let temp_dir_location = here.display().to_string() + &without_dot;
 
         // if it isn't there already
         if !std::path::Path::new(&temp_dir_location).exists() {
