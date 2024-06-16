@@ -29,18 +29,23 @@ fn main() {
 
     let start = Instant::now();
 
-    if args.command == cli::Commands::GetModel {
+    if args.command == Some(cli::Commands::GetModel) {
         println!("Select a model:");
-        println!("[1] Small: vosk-model-small-en-us-0.15 - 40Mb - small, lightweight, not very accurate");
+        println!(
+            "[1] Small: vosk-model-small-en-us-0.15 - 40Mb - small, lightweight, not very accurate"
+        );
         println!("[2] Medium: vosk-model-en-us-0.22-lgraph - 128Mb - fairly small, more accurate - recommended");
-        println!("[3] Large: vosk-model-en-us-0.22 - 1.8Gb - big, very accurate, requires a lot of RAM");
+        println!(
+            "[3] Large: vosk-model-en-us-0.22 - 1.8Gb - big, very accurate, requires a lot of RAM"
+        );
 
         let mut input = String::new();
         let mut out: usize = 0;
-        
 
         while out != 0 {
-            io::stdin().read_line(&mut input).expect("Error reading user input");
+            io::stdin()
+                .read_line(&mut input)
+                .expect("Error reading user input");
             let err = input.parse::<usize>();
             if err.is_err() {
                 println!("Please enter 1, 2 or 3");
@@ -53,7 +58,7 @@ fn main() {
         }
 
         return;
-    } 
+    }
 
     // Does the detection and removal
     let cleaner = Cleaner::from_args(args);
@@ -86,8 +91,10 @@ impl Cleaner {
         // start by making the temp directory - without this, writing the temp files will fail
         Cleaner::make_temp_dir();
 
+        let file_in = args.file_in.expect("No input file given");
+
         // gets the file's name by itself
-        let path = Path::new(&args.file_in);
+        let path = Path::new(&file_in);
         let file_name = path
             .file_name()
             .and_then(|name| name.to_str())
@@ -111,7 +118,7 @@ impl Cleaner {
         // makes and returns the Cleaner struct
         Cleaner {
             model_location: args.model,
-            file_location: args.file_in,
+            file_location: file_in,
             preprocessed_file_location: format!("temp\\{}.wav", file_name.clone()),
             file_name,
             thread_number: args.threads,

@@ -10,7 +10,7 @@ use zip::read::ZipArchive;
 #[command(version, about, long_about = None)]
 pub struct Args {
     /// File to clean
-    pub file_in: String,
+    pub file_in: Option<String>,
 
     /// Path to a Vosk model - default is the model included
     #[arg(value_parser = model_location_exists, short, long, default_value_t = String::from("vosk/model/vosk-model-en-us-0.22-lgraph"))]
@@ -26,12 +26,14 @@ pub struct Args {
         .into())]
     pub threads: usize,
 
+    /// Call a subcommand
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
 }
 
 #[derive(clap::Subcommand, PartialEq)]
 pub enum Commands {
+    /// Download a Vosk model from the web
     GetModel,
 }
 
@@ -79,6 +81,8 @@ pub fn get_model(model: usize) {
     // Unzip the downloaded file
     unzip_file(&zip_data, output_dir).expect("Error unzipping file");
 
+    unwrap_model(output_dir).expect("Error unwrapping model directories");
+
     println!("Download and extraction complete!");
 }
 
@@ -111,5 +115,24 @@ fn unzip_file(data: &[u8], output_dir: &Path) -> Result<(), Box<dyn std::error::
             io::copy(&mut file, &mut outfile)?;
         }
     }
+    Ok(())
+}
+
+fn unwrap_model(model_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let parent_folder = model_dir.parent().expect("Folder has no parent");
+
+    // Read the contents of the folder
+    let entries = std::fs::read_dir(model_dir)?;
+
+    for entry in entries {
+        let entry = entry?;
+        let entry_path = entry.path();
+        let file_name = entry_path.file_name().expect("Entry has no file name");
+        let new_path = parent_folder.join(file_name);
+
+        // Move the entry to the parent folder
+        std::fs::rename(entry_path, new_path)?;
+    }
+
     Ok(())
 }
