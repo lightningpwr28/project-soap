@@ -119,7 +119,7 @@ impl Cleaner {
         Cleaner {
             model_location: args.model,
             file_location: file_in,
-            preprocessed_file_location: format!("temp\\{}.wav", file_name.clone()),
+            preprocessed_file_location: format!("temp/{}.wav", file_name.clone()),
             file_name,
             thread_number: args.threads,
             out_location,
