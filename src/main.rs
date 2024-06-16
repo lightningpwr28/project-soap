@@ -44,7 +44,7 @@ fn main() {
         let mut input = String::new();
         let mut out: usize = 0;
 
-        while out != 0 {
+        loop {
             io::stdin()
                 .read_line(&mut input)
                 .expect("Error reading user input");
@@ -56,10 +56,14 @@ fn main() {
                 out = err.unwrap();
             }
 
-            cli::get_model(out);
-        }
+            if !(..3_usize).contains(&out) {
+                println!("Please enter 1, 2 or 3");
+                continue;
+            }
 
-        return;
+            cli::get_model(out);
+            return;
+        }
     }
 
     // Does the detection and removal
