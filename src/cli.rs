@@ -34,7 +34,20 @@ pub struct Args {
 #[derive(clap::Subcommand, PartialEq)]
 pub enum Commands {
     /// Download a Vosk model from the web
-    GetModel,
+    GetModel {
+
+        /// vosk-model-small-en-us-0.15 - 40Mb - small, lightweight, not very accurate
+        #[arg(long, group = "model")]
+        small: bool,
+
+        /// vosk-model-en-us-0.22-lgraph - 128Mb - fairly small, more accurate - recommended
+        #[arg(long, group = "model")]
+        medium: bool,
+
+        /// vosk-model-en-us-0.22 - 1.8Gb - big, even more accurate, requires a lot of RAM
+        #[arg(long, group = "model")]
+        large: bool,
+    },
 }
 
 // Input validator - checks if the model path exists
@@ -65,11 +78,11 @@ fn thread_number_in_range(t: &str) -> Result<usize, String> {
     }
 }
 
-pub fn get_model(model: usize) {
+pub fn get_model(model: &str) {
     let url = match model {
-        1 => "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
-        2 => "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22-lgraph.zip",
-        3 => "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip",
+        "small" => "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
+        "medium" => "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22-lgraph.zip",
+        "large" => "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip",
         _ => panic!("It should be impossible to get here"),
     };
 

@@ -29,41 +29,23 @@ fn main() {
 
     let start = Instant::now();
 
-    if args.command == Some(cli::Commands::GetModel) {
-        println!("Select a model:");
-        println!(
-            "[1] Small: vosk-model-small-en-us-0.15 - 40Mb - small, lightweight, not very accurate"
-        );
-        println!(
-            "[2] Medium: vosk-model-en-us-0.22-lgraph - 128Mb - fairly small, more accurate - recommended"
-        );
-        println!(
-            "[3] Large: vosk-model-en-us-0.22 - 1.8Gb - big, very accurate, requires a lot of RAM"
-        );
+    if args.command.is_some() {
+        let command = args.command.as_ref().unwrap();
 
-        let mut input = String::new();
-        let mut out: usize = 0;
-
-        loop {
-            io::stdin()
-                .read_line(&mut input)
-                .expect("Error reading user input");
-            let err = input.parse::<usize>();
-            if err.is_err() {
-                println!("Please enter 1, 2 or 3");
-                continue;
-            } else {
-                out = err.unwrap();
+        match command {
+            cli::Commands::GetModel { small, medium, large } => {
+                if *small {
+                    cli::get_model("small");
+                } else if *medium {
+                    cli::get_model("medium");
+                } else if *large {
+                    cli::get_model("large");
+                }
             }
-
-            if !(..3_usize).contains(&out) {
-                println!("Please enter 1, 2 or 3");
-                continue;
-            }
-
-            cli::get_model(out);
-            return;
+            
         }
+
+        return;
     }
 
     // Does the detection and removal
