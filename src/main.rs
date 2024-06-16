@@ -5,7 +5,7 @@ use clap::Parser;
 // For multi-threading
 use serde_json::json;
 use std::thread::JoinHandle;
-use std::{fs, thread};
+use std::{fs, thread, usize};
 
 // For FFmpeg
 use std::{process::Command, time::Instant};
@@ -17,7 +17,7 @@ use vosk::{Model, Recognizer};
 // For loading list of swear words
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, *};
 use std::path::Path;
 
 fn main() {
@@ -28,6 +28,32 @@ fn main() {
     let args = cli::Args::parse();
 
     let start = Instant::now();
+
+    if args.command == cli::Commands::GetModel {
+        println!("Select a model:");
+        println!("[1] Small: vosk-model-small-en-us-0.15 - 40Mb - small, lightweight, not very accurate");
+        println!("[2] Medium: vosk-model-en-us-0.22-lgraph - 128Mb - fairly small, more accurate - recommended");
+        println!("[3] Large: vosk-model-en-us-0.22 - 1.8Gb - big, very accurate, requires a lot of RAM");
+
+        let mut input = String::new();
+        let mut out: usize = 0;
+        
+
+        while out != 0 {
+            io::stdin().read_line(&mut input).expect("Error reading user input");
+            let err = input.parse::<usize>();
+            if err.is_err() {
+                println!("Please enter 1, 2 or 3");
+                continue;
+            } else {
+                out = err.unwrap();
+            }
+
+            cli::get_model(out);
+        }
+
+        return;
+    } 
 
     // Does the detection and removal
     let cleaner = Cleaner::from_args(args);
