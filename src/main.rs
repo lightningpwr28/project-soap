@@ -218,7 +218,7 @@ impl Cleaner {
             // offsets the word timestamps - each recognizer thinks it's at the beginning of the audio, so without this, there's just a bunch of holes at the beginning of the input file
             for word in json.iter_mut() {
 
-                if curse_list.contains(word.word) {
+                if !curse_list.contains(word.word) {
                     continue;
                 } else {
                     word.start += (offset / 16000.) * counter as f32;
