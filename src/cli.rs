@@ -1,6 +1,6 @@
 // The way I want the CLI to work: project-clean [FILE NAME] [options: [-o/--out [OUT FILE NAME]] [-m/--model [MODEL LOCATION]] [-t/--threads [NUMBER OF THREADS]]]
 use clap::Parser;
-use reqwest::blocking::get;
+use reqwest::blocking::Client;
 use std::fs::File;
 use std::io::{self, Cursor};
 use std::path::Path;
@@ -13,7 +13,7 @@ pub struct Args {
     pub file_in: Option<String>,
 
     /// Path to a Vosk model - default is the model included
-    #[arg(value_parser = model_location_exists, short, long, default_value_t = String::from("vosk/model/vosk-model-en-us-0.22-lgraph"))]
+    #[arg(value_parser = model_location_exists, short, long, default_value_t = String::from("model/"))]
     pub model: String,
 
     /// Path to and name of cleaned file - default is overwriting the original file
@@ -35,7 +35,6 @@ pub struct Args {
 pub enum Commands {
     /// Download a Vosk model from the web
     GetModel {
-
         /// vosk-model-small-en-us-0.15 - 40Mb - small, lightweight, not very accurate
         #[arg(long, group = "model")]
         small: bool,
@@ -87,10 +86,12 @@ pub fn get_model(model: &str) {
     };
 
     let output_dir = Path::new("model");
-    
-    std::fs::remove_dir_all(output_dir).expect("Error removing current model");
 
-    println!("Getting model {} at {}", model, url);
+    if output_dir.exists() {
+        std::fs::remove_dir_all(output_dir).expect("Error removing current model");
+    }
+
+    println!("Getting model '{}' at {}", model, url);
 
     // Download the ZIP file
     let zip_data = download_file(url).expect(&format!("Error downloading file: {}", url));
@@ -98,19 +99,27 @@ pub fn get_model(model: &str) {
     // Unzip the downloaded file
     unzip_file(&zip_data, output_dir).expect("Error unzipping file");
 
-    let mut entry = std::fs::read_dir(output_dir).expect("error getting downloaded model directory");
-    
+    let mut entry =
+        std::fs::read_dir(output_dir).expect("error getting downloaded model directory");
+
     let model_dir = entry.next().unwrap().unwrap();
 
     unwrap_model(&model_dir.path()).expect("Error unwrapping model directories");
 
-    println!("Download and extraction complete!");
 }
 
 fn download_file(url: &str) -> Result<Vec<u8>, reqwest::Error> {
-    let response = get(url)?;
-    let bytes = response.bytes()?;
-    Ok(bytes.to_vec())
+    let client = Client::builder()
+        .timeout(std::time::Duration::from_secs(600)) // Set a timeout of 10 minutes
+        .build()?;
+
+    let mut response = client.get(url).send()?;
+    let mut content = Vec::new();
+    response.copy_to(&mut content)?;
+
+    println!("Done downloading model");
+
+    Ok(content)
 }
 
 fn unzip_file(data: &[u8], output_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
@@ -136,6 +145,7 @@ fn unzip_file(data: &[u8], output_dir: &Path) -> Result<(), Box<dyn std::error::
             io::copy(&mut file, &mut outfile)?;
         }
     }
+    println!("Done unzipping model");
     Ok(())
 }
 
@@ -156,6 +166,8 @@ fn unwrap_model(model_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     std::fs::remove_dir(model_dir)?;
+
+    println!("Done unwrapping model");
 
     Ok(())
 }

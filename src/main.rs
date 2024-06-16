@@ -21,9 +21,6 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 fn main() {
-    std::env::set_var("RUST_BACKTRACE", "full");
-    // let file_location = String::from("Extra Crispy - Crispy reacts to Daily Dose of Internet.webm");
-    // let model_location = String::from("vosk/model/vosk-model-en-us-0.22-lgraph");
 
     // Parses the CLI arguments
     let args = cli::Args::parse();
@@ -133,6 +130,8 @@ impl Cleaner {
             .arg(self.preprocessed_file_location.clone())
             .output()
             .expect("FFmpeg error");
+
+        #[cfg(debug_assertions)]
         println!("{:?}", out);
     }
 
@@ -246,6 +245,7 @@ impl Cleaner {
                     curse.start, curse.end
                 ));
 
+                #[cfg(debug_assertions)]
                 println!("Removed {} at {} to {}", curse.word, curse.start, curse.end);
 
                 number_of_curses += 1;
@@ -270,6 +270,7 @@ impl Cleaner {
             .output()
             .expect("failed to execute process");
 
+        #[cfg(debug_assertions)]
         println!("{:?}", out);
 
         println!("Removed {} expletives.", number_of_curses);
@@ -320,7 +321,6 @@ impl Cleaner {
 
         // makes the temp json file name
         let name = format!("temp/{}_'{}'.json", thread_name, file_name);
-        println!("{}", name);
 
         // writes it to file
         fs::write(name, json!(curses).to_string()).expect(&format!(
@@ -328,6 +328,7 @@ impl Cleaner {
             thread_name
         ));
 
+        #[cfg(debug_assertions)]
         println!("Thread {} done!", thread_name);
     }
 
@@ -364,7 +365,11 @@ impl Cleaner {
         // gets the absolute path to here
         let here = fs::canonicalize("./").expect("Error in canonicalizing temp path");
         // add the temp dir as a string
+        #[cfg(unix)]
         let temp_dir_location = here.display().to_string() + "/temp";
+
+        #[cfg(windows)]
+        let temp_dir_location = here.display().to_string() + "\\temp";
 
         // if it isn't there already
         if !std::path::Path::new(&temp_dir_location).exists() {
