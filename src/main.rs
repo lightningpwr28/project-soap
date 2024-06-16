@@ -21,7 +21,6 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 fn main() {
-
     // Parses the CLI arguments
     let args = cli::Args::parse();
 
@@ -31,7 +30,11 @@ fn main() {
         let command = args.command.as_ref().unwrap();
 
         match command {
-            cli::Commands::GetModel { small, medium, large } => {
+            cli::Commands::GetModel {
+                small,
+                medium,
+                large,
+            } => {
                 if *small {
                     cli::get_model("small");
                 } else if *medium {
@@ -40,7 +43,6 @@ fn main() {
                     cli::get_model("large");
                 }
             }
-            
         }
 
         return;
@@ -70,13 +72,11 @@ struct Cleaner {
     // where we'll put the cleaned file at the end - intended to be the same as file_location, but has the option of being different
     out_location: String,
     overwrite: bool,
+    temp_dir_name: String,
 }
 impl Cleaner {
     // a constructor using the CLI arguments
     fn from_args(args: cli::Args) -> Cleaner {
-        // start by making the temp directory - without this, writing the temp files will fail
-        Cleaner::make_temp_dir();
-
         let file_in = args.file_in.expect("No input file given");
 
         // gets the file's name by itself
@@ -86,6 +86,15 @@ impl Cleaner {
             .and_then(|name| name.to_str())
             .expect("Error getting file name")
             .to_string();
+
+        #[cfg(unix)]
+        let temp_dir_name = format!("/temp'{}'", file_name);
+
+        #[cfg(windows)]
+        let temp_dir_name = format!("\\temp'{}'", file_name);
+
+        // start by making the temp directory - without this, writing the temp files will fail
+        Cleaner::make_temp_dir(temp_dir_name.clone());
 
         let overwrite: bool;
         let mut out_location = "temp/".to_string() + &file_name.to_string();
@@ -105,11 +114,16 @@ impl Cleaner {
         Cleaner {
             model_location: args.model,
             file_location: file_in,
-            preprocessed_file_location: format!("temp/{}.wav", file_name.clone()),
+            preprocessed_file_location: format!(
+                ".{}\\{}.wav",
+                temp_dir_name.clone(),
+                file_name.clone()
+            ),
             file_name,
             thread_number: args.threads,
             out_location,
             overwrite,
+            temp_dir_name,
         }
     }
 
@@ -171,12 +185,12 @@ impl Cleaner {
             let sample_chunk = sample_chunks.next().unwrap().to_vec();
 
             // copy the file name to send to the threads
-            let file_name_copy = self.file_name.clone();
+            let temp_dir_name_copy = self.temp_dir_name.clone();
 
             // actually split off the thread
             let thread = thread::spawn(move || {
                 Cleaner::split_threads(
-                    file_name_copy,
+                    temp_dir_name_copy,
                     &mut recognizer,
                     sample_chunk,
                     &format!("{:?}", i),
@@ -204,12 +218,15 @@ impl Cleaner {
         let offset: f32 = (samples.len() as f32) / (self.thread_number as f32);
         let mut number_of_curses = 0;
         for i in file_contents.iter_mut() {
+            #[cfg(unix)]
+            let json_name = format!("{}/{}.json", self.temp_dir_name, counter);
+
+            #[cfg(windows)]
+            let json_name = format!("{}\\{}.json", self.temp_dir_name, counter);
+
             // read the temp json file into i - the format! call probably isn't the best way to do this
-            *i = fs::read_to_string(format!("temp/{:?}_'{}'.json", counter, self.file_name))
-                .expect(&format!(
-                    "Error opening json file at {:?}_{}.json",
-                    counter, self.file_name
-                ));
+            *i = fs::read_to_string(json_name.clone())
+                .expect(&format!("Error opening json file at {}", json_name));
 
             // deserializes the json file into a Vec<vosk::Word>
             let mut json: Vec<vosk::Word> =
@@ -217,7 +234,6 @@ impl Cleaner {
 
             // offsets the word timestamps - each recognizer thinks it's at the beginning of the audio, so without this, there's just a bunch of holes at the beginning of the input file
             for word in json.iter_mut() {
-
                 if !curse_list.contains(word.word) {
                     continue;
                 } else {
@@ -243,7 +259,6 @@ impl Cleaner {
     fn remove_curses(&self, times_in: &[vosk::Word]) {
         // Stores the list of filters that determine which audio segments will be cut out
         let mut filter_string = String::new();
-
 
         // This loops over each expletive in times_in and converts the data into a filter FFmpeg can use.
         for curse in times_in {
@@ -274,7 +289,6 @@ impl Cleaner {
 
         #[cfg(debug_assertions)]
         println!("{:?}", out);
-
     }
 
     // loads the expletives from a text file
@@ -305,7 +319,7 @@ impl Cleaner {
 
     // the function for each of the threads to run
     fn split_threads(
-        file_name: String,
+        temp_dir_name: String,
         recognizer: &mut Recognizer,
         samples: Vec<i16>,
         thread_name: &str,
@@ -321,7 +335,11 @@ impl Cleaner {
         let curses = binding.result;
 
         // makes the temp json file name
-        let name = format!("temp/{}_'{}'.json", thread_name, file_name);
+        #[cfg(unix)]
+        let name = format!(".{}/{}.json", temp_dir_name, thread_name);
+
+        #[cfg(windows)]
+        let name = format!(".{}\\{}.json", temp_dir_name, thread_name);
 
         // writes it to file
         fs::write(name, json!(curses).to_string()).expect(&format!(
@@ -346,31 +364,17 @@ impl Cleaner {
                 .expect("Error copying clean file to original");
         }
 
-        let paths = fs::read_dir("./temp").unwrap();
-        // for each of the files in the temp dir
-        for file in paths {
-            // get it's file location as a string
-            let path_str: String = String::from(file.unwrap().path().display().to_string());
-            // and remove it
-            if path_str.contains(&self.file_name) {
-                fs::remove_file(path_str.clone())
-                    .expect(&format!("Unable to remove file at {}", path_str));
-            }
-        }
-
-        // TODO: if the temp dir is empty at this point, remove it (think about race conditions before implementing)
+        println!("{}", self.temp_dir_name);
+        fs::remove_dir_all(".".to_owned() + &self.temp_dir_name.clone()).expect("Error removing temp dir");
     }
 
     // makes the temp dir if it isn't there already
-    fn make_temp_dir() {
+    fn make_temp_dir(temp_dir_name: String) {
         // gets the absolute path to here
         let here = fs::canonicalize("./").expect("Error in canonicalizing temp path");
-        // add the temp dir as a string
-        #[cfg(unix)]
-        let temp_dir_location = here.display().to_string() + "/temp";
 
-        #[cfg(windows)]
-        let temp_dir_location = here.display().to_string() + "\\temp";
+        // add the temp dir as a string
+        let temp_dir_location = here.display().to_string() + &temp_dir_name;
 
         // if it isn't there already
         if !std::path::Path::new(&temp_dir_location).exists() {
