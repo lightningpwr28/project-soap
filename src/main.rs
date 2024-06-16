@@ -34,7 +34,9 @@ fn main() {
         println!(
             "[1] Small: vosk-model-small-en-us-0.15 - 40Mb - small, lightweight, not very accurate"
         );
-        println!("[2] Medium: vosk-model-en-us-0.22-lgraph - 128Mb - fairly small, more accurate - recommended");
+        println!(
+            "[2] Medium: vosk-model-en-us-0.22-lgraph - 128Mb - fairly small, more accurate - recommended"
+        );
         println!(
             "[3] Large: vosk-model-en-us-0.22 - 1.8Gb - big, very accurate, requires a lot of RAM"
         );
