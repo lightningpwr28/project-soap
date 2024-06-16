@@ -1,9 +1,9 @@
 // The way I want the CLI to work: project-clean [FILE NAME] [options: [-o/--out [OUT FILE NAME]] [-m/--model [MODEL LOCATION]] [-t/--threads [NUMBER OF THREADS]]]
 use clap::Parser;
-use std::path::Path;
+use reqwest::blocking::get;
 use std::fs::File;
 use std::io::{self, Cursor};
-use reqwest::blocking::get;
+use std::path::Path;
 use zip::read::ZipArchive;
 
 #[derive(Parser)]
@@ -70,9 +70,9 @@ pub fn get_model(model: usize) {
         1 => "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
         2 => "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22-lgraph.zip",
         3 => "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip",
-        _ => panic!("It should be impossible to get here")
+        _ => panic!("It should be impossible to get here"),
     };
-    
+
     let output_dir = Path::new("model");
 
     // Download the ZIP file
