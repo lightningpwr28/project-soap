@@ -102,7 +102,7 @@ impl Cleaner {
             .to_string();
 
         let overwrite: bool;
-        let mut out_location = "temp\\".to_string() + &file_name.to_string();
+        let mut out_location = "temp/".to_string() + &file_name.to_string();
         // if the user didn't set a special out location
         if args.out == "" {
             out_location.insert_str(
@@ -355,7 +355,7 @@ impl Cleaner {
                 .expect("Error copying clean file to original");
         }
 
-        let paths = fs::read_dir(".\\temp").unwrap();
+        let paths = fs::read_dir("./temp").unwrap();
         // for each of the files in the temp dir
         for file in paths {
             // get it's file location as a string
@@ -375,7 +375,7 @@ impl Cleaner {
         // gets the absolute path to here
         let here = fs::canonicalize("./").expect("Error in canonicalizing temp path");
         // add the temp dir as a string
-        let temp_dir_location = here.display().to_string() + "\\temp";
+        let temp_dir_location = here.display().to_string() + "/temp";
 
         // if it isn't there already
         if !std::path::Path::new(&temp_dir_location).exists() {
