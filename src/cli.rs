@@ -18,7 +18,7 @@ pub struct Args {
         if cfg!(windows) {
             String::from("C:\\Program Files\\project-soap\\model\\")
         } else {
-            String::from("~/model/")
+            String::from("~/project-soap/model/")
         }
     })]
     pub model: String,

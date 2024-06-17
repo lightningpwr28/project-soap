@@ -288,12 +288,17 @@ impl Cleaner {
         let mut list = HashSet::<String>::new();
 
         // reads the lines of the file
-        if let Ok(lines) = read_lines("list.txt") {
-            // Consumes the iterator, returns an (Optional) String
-            for line in lines.flatten() {
-                if !line.starts_with("/") && line != "" {
-                    list.insert(line);
-                }
+        #[cfg(unix)]
+        let lines = read_lines("~/.project-soap/list.txt").expect("Error getting list of expletives");
+
+        #[cfg(windows)]
+        let lines = read_lines("C:\\Program Files\\project-soap\\list.txt").expect("Error getting list of expletives");
+
+
+        // Consumes the iterator, returns an (Optional) String
+        for line in lines.flatten() {
+            if !line.starts_with("/") && line != "" {
+                list.insert(line);
             }
         }
 
