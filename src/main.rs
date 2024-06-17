@@ -4,7 +4,6 @@ use clap::Parser;
 
 // For multi-threading
 use serde_json::json;
-use std::process::Output;
 use std::thread::JoinHandle;
 use std::{fs, thread, usize};
 
@@ -78,8 +77,15 @@ impl Cleaner {
     fn from_args(args: cli::Args) -> Cleaner {
         let file_in = args.file_in.expect("No input file given");
 
+        let san_file_in = file_in.replace("'", "");
+
+        if file_in.contains("'") {
+            std::fs::rename(file_in, san_file_in.clone()).expect("Error moving file");
+        }
+        
+
         // gets the file's name by itself
-        let path = Path::new(&file_in);
+        let path = Path::new(&san_file_in);
         let file_name = path
             .file_name()
             .and_then(|name| name.to_str())
@@ -106,7 +112,7 @@ impl Cleaner {
         // makes and returns the Cleaner struct
         Cleaner {
             model_location: args.model,
-            file_location: file_in,
+            file_location: san_file_in,
             preprocessed_file_location: format!(
                 "{}\\{}.wav",
                 temp_dir_name.clone(),
@@ -162,7 +168,7 @@ impl Cleaner {
             .expect("Could not read WAV file");
 
         // splits the audio into thread_number chunks
-        let mut sample_chunks = samples.chunks_exact(samples.len() / self.thread_number);
+        let mut sample_chunks = samples.chunks(samples.len() / self.thread_number);
 
         // a vector to make it so we can wait for all the threads to finish before making the filters for ffmpeg
         let mut threads: Vec<JoinHandle<()>> = Vec::new();
@@ -268,11 +274,9 @@ impl Cleaner {
         #[cfg(debug_assertions)]
         println!("{}", filter_string);
 
-        let out: std::process::Output;
-
-        if !filter_string.len() == 0 {
+        if filter_string.len() != 0 {
             // This builds the command.
-            out = Command::new("ffmpeg")
+            let out = Command::new("ffmpeg")
                 .arg("-y")
                 .arg("-i")
                 .arg(self.file_location.clone())
@@ -282,15 +286,12 @@ impl Cleaner {
                 .arg(&format!("{}", self.out_location))
                 .output()
                 .expect("failed to execute process");
-        } else {
-            out = Command::new("echo")
-                .arg("Nothing to remove")
-                .output()
-                .expect("failed to execute process");
-        }
 
-        #[cfg(debug_assertions)]
-        println!("{:?}", out);
+            #[cfg(debug_assertions)]
+            println!("{:?}", out);
+        } else {
+            println!("Nothing to remove");
+        }
     }
 
     // loads the expletives from a text file
@@ -332,8 +333,12 @@ impl Cleaner {
         samples: Vec<i16>,
         thread_name: &str,
     ) {
-        // Feed the model the sound file. I do this all at once because I don't care about real-time output.
-        recognizer.accept_waveform(&samples);
+        let sample_chunks = samples.chunks(2000);
+
+        for chunk in sample_chunks {
+            // Feed the model the sound file. I have to split up the chunks because the model can't take chunks over a certain size
+            recognizer.accept_waveform(chunk);
+        }
 
         // binds a temporary value so I can keep the results
         let binding = recognizer
