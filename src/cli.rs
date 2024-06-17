@@ -84,7 +84,7 @@ fn thread_number_in_range(t: &str) -> Result<usize, String> {
     }
 }
 
-pub fn get_model(model: &str) {
+pub fn get_model(model: &str, model_path: String) {
     let url = match model {
         "small" => "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
         "medium" => "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22-lgraph.zip",
@@ -92,7 +92,7 @@ pub fn get_model(model: &str) {
         _ => panic!("It should be impossible to get here"),
     };
 
-    let output_dir = Path::new("model");
+    let output_dir = Path::new(&model_path);
 
     if output_dir.exists() {
         std::fs::remove_dir_all(output_dir).expect("Error removing current model");

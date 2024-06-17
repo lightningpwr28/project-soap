@@ -36,11 +36,11 @@ fn main() {
                 large,
             } => {
                 if *small {
-                    cli::get_model("small");
+                    cli::get_model("small", args.model);
                 } else if *medium {
-                    cli::get_model("medium");
+                    cli::get_model("medium", args.model);
                 } else if *large {
-                    cli::get_model("large");
+                    cli::get_model("large", args.model);
                 }
             }
         }
