@@ -65,8 +65,6 @@ struct Cleaner {
     file_location: String,
     // the path where we'll put the preprocessed audio file - 16khz, 16 bit pcm wav
     preprocessed_file_location: String,
-    // the name of the file without the path to it - for the temp files we generate
-    file_name: String,
     // the number of threads to run the model on
     thread_number: usize,
     // where we'll put the cleaned file at the end - intended to be the same as file_location, but has the option of being different
@@ -113,7 +111,6 @@ impl Cleaner {
                 temp_dir_name.clone(),
                 file_name.clone()
             ),
-            file_name,
             thread_number: args.threads,
             out_location,
             overwrite,

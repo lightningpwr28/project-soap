@@ -38,6 +38,11 @@
 					Source="..\..\target\release\libwinpthread-1.dll" />
 
 			</Component>
+			
+			<Component Id="CreateTestFolder" Directory="ModelFolder" Guid="e1f6d2a9-5915-45f1-a169-6c0d463c0c8a">
+				<CreateFolder />
+			</Component>
+
 
 		</ComponentGroup>
 	</Package>

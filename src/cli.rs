@@ -13,7 +13,14 @@ pub struct Args {
     pub file_in: Option<String>,
 
     /// Path to a Vosk model - default is the model included
-    #[arg(value_parser = model_location_exists, short, long, default_value_t = String::from("model/"))]
+    #[arg(value_parser = model_location_exists, short, long, default_value_t = {
+        
+        if cfg!(windows) {
+            String::from("C:\\Program Files\\project-soap\\model\\")
+        } else {
+            String::from("~/model/")
+        }
+    })]
     pub model: String,
 
     /// Path to and name of cleaned file - default is overwriting the original file
