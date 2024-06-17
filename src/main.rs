@@ -333,12 +333,9 @@ impl Cleaner {
         samples: Vec<i16>,
         thread_name: &str,
     ) {
-        let sample_chunks = samples.chunks(2000);
+        // Feed the model the sound file.
+        recognizer.accept_waveform(&samples);
 
-        for chunk in sample_chunks {
-            // Feed the model the sound file. I have to split up the chunks because the model can't take chunks over a certain size
-            recognizer.accept_waveform(chunk);
-        }
 
         // binds a temporary value so I can keep the results
         let binding = recognizer
