@@ -1,7 +1,12 @@
 [package]
 name = "project-soap"
 version = "0.1.0"
+authors = ["lightningpwr28"]
 edition = "2021"
+license = "GPL-3.0-or-later"
+description = "A command line tool to remove expletives from media"
+readme = "README.md"
+repository = "https://github.com/lightningpwr28/project-soap"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,3 +18,5 @@ clap = { version = "4.5.7", features = ["derive"] }
 reqwest = { version = "0.12.4", features = ["blocking"] }
 zip = "2.1.3"
 
+[package.metadata.deb]
+assets = [["vosk/api/linux/vosk-linux-x86_64-0.3.45/libvosk.so", "usr/bin", "755"]]
