@@ -1,0 +1,5 @@
+Package: project-soap
+Version: 0.1.0
+Architecture: amd64
+Maintainer: lightningpwr28
+Description: A program to remove expletives from media files

@@ -1,0 +1,5 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: project-soap
+Source: https://github.com/lightningpwr28/project-soap
+Copyright: lightningpwr28
+License: GPL-3.0-or-later
