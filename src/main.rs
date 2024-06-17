@@ -4,6 +4,7 @@ use clap::Parser;
 
 // For multi-threading
 use serde_json::json;
+use std::process::Output;
 use std::thread::JoinHandle;
 use std::{fs, thread, usize};
 
@@ -264,19 +265,29 @@ impl Cleaner {
         filter_string.pop();
         filter_string.pop();
 
+        #[cfg(debug_assertions)]
         println!("{}", filter_string);
 
-        // This builds the command.
-        let out = Command::new("ffmpeg")
-            .arg("-y")
-            .arg("-i")
-            .arg(self.file_location.clone())
-            .arg("-af")
-            .arg(filter_string)
-            .args(["-c:v", "copy"])
-            .arg(&format!("{}", self.out_location))
-            .output()
-            .expect("failed to execute process");
+        let out: std::process::Output;
+
+        if !filter_string.len() == 0 {
+            // This builds the command.
+            out = Command::new("ffmpeg")
+                .arg("-y")
+                .arg("-i")
+                .arg(self.file_location.clone())
+                .arg("-af")
+                .arg(filter_string)
+                .args(["-c:v", "copy"])
+                .arg(&format!("{}", self.out_location))
+                .output()
+                .expect("failed to execute process");
+        } else {
+            out = Command::new("echo")
+                .arg("Nothing to remove")
+                .output()
+                .expect("failed to execute process");
+        }
 
         #[cfg(debug_assertions)]
         println!("{:?}", out);
@@ -289,11 +300,12 @@ impl Cleaner {
 
         // reads the lines of the file
         #[cfg(unix)]
-        let lines = read_lines("~/.project-soap/list.txt").expect("Error getting list of expletives");
+        let lines =
+            read_lines("~/.project-soap/list.txt").expect("Error getting list of expletives");
 
         #[cfg(windows)]
-        let lines = read_lines("C:\\Program Files\\project-soap\\list.txt").expect("Error getting list of expletives");
-
+        let lines = read_lines("C:\\Program Files\\project-soap\\list.txt")
+            .expect("Error getting list of expletives");
 
         // Consumes the iterator, returns an (Optional) String
         for line in lines.flatten() {
