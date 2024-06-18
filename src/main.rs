@@ -49,7 +49,7 @@ fn main() {
     }
 
     // Does the detection and removal
-    let cleaner = Cleaner::from_args(args);
+    let mut cleaner = Cleaner::from_args(args);
     cleaner.preprocess_audio();
     cleaner.find_and_remove_curses();
 
@@ -148,7 +148,7 @@ impl Cleaner {
     }
 
     // sets up and does the cleaning
-    fn find_and_remove_curses(&self) {
+    fn find_and_remove_curses(&mut self) {
         // Load the Vosk model
         let model = Model::new(self.model_location.clone()).expect("Could not create model");
 
@@ -254,7 +254,7 @@ impl Cleaner {
     }
 
     // checks each word against the HashSet, makes a filter string to remove it if it is on the list, and then calls ffmpeg to remove it
-    fn remove_curses(&self, times_in: &[vosk::Word]) {
+    fn remove_curses(&mut self, times_in: &[vosk::Word]) {
         // Stores the list of filters that determine which audio segments will be cut out
         let mut filter_string = String::new();
 
@@ -290,6 +290,7 @@ impl Cleaner {
             #[cfg(debug_assertions)]
             println!("{:?}", out);
         } else {
+            self.overwrite = false;
             println!("Nothing to remove");
         }
     }
