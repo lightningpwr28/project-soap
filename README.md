@@ -1,6 +1,6 @@
-# Project Soap
+# project-Soap
 
-Project soap is an open source command line program that removes expletives from media with audio. Powered by Vosk.
+project-soap is an open source command line program that removes expletives from media with audio. Powered by Vosk.
 
 ## Installation
 
