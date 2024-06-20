@@ -10,4 +10,4 @@ Project soap is an open source command line program that removes expletives from
 ## Usage
 I recommend using this tool in conjunction with [Stacher](https://stacher.io/) and it's custom post-processing feature - simply add ``project-soap {}`` to a new line!
 
-For more complete usage instructions, see <usage.md>
+For more complete usage instructions, see [usage.md](https://github.com/lightningpwr28/project-soap/blob/master/usage.md)
