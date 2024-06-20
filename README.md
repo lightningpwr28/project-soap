@@ -4,6 +4,12 @@ Project soap is an open source command line program that removes expletives from
 
 ## Installation
 
+### Requirements
+
+FFmpeg is required for project-soap to function.
+
+### Steps
+
 1. Download the latest release [here](https://github.com/lightningpwr28/project-soap/releases)
 2. Run ``project-soap get-model --large``, or download another model from [Alpha Cephei](https://alphacephei.com/vosk/models) or elsewhere
 
