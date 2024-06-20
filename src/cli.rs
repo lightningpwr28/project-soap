@@ -1,4 +1,3 @@
-// The way I want the CLI to work: project-clean [FILE NAME] [options: [-o/--out [OUT FILE NAME]] [-m/--model [MODEL LOCATION]] [-t/--threads [NUMBER OF THREADS]]]
 use clap::Parser;
 use reqwest::blocking::Client;
 use std::fs::File;
@@ -47,7 +46,7 @@ pub enum Commands {
         #[arg(long, group = "model")]
         small: bool,
 
-        /// vosk-model-en-us-0.22-lgraph - 128Mb - fairly small, more accurate - recommended
+        /// vosk-model-en-us-0.22-lgraph - 128Mb - fairly small, more accurate
         #[arg(long, group = "model")]
         medium: bool,
 

@@ -1,11 +1,13 @@
 # Project Soap
 
-Project soap is an open source command line program to remove certain expletives from content downloaded with yt-dl(p).
+Project soap is an open source command line program that removes expletives from media with audio. Powered by Vosk.
 
-## TODO
+## Installation
 
-1. Finish in-code Todos
-2. Write unit tests
-3. Clean up code
-4. Package for release
+1. Download the latest release [here](https://github.com/lightningpwr28/project-soap/releases)
+2. Run ``project-soap get-model --large``, or download another model from [Alpha Cephei](https://alphacephei.com/vosk/models) or elsewhere
 
+## Usage
+I recommend using this tool in conjunction with [Stacher](https://stacher.io/) and it's custom post-processing feature - simply add ``project-soap {}`` to a new line!
+
+For more complete usage instructions, see <usage.md>
