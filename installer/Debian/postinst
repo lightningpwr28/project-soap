@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# Get the current user's home directory
+USER_HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
+
+# Define the directory path
+DIR_PATH="$USER_HOME/.project-soap"
+
+# Check if the directory exists
+if [ ! -d "$DIR_PATH" ]; then
+    # Directory does not exist, create it
+    mkdir -p "$DIR_PATH"
+    echo "Directory $DIR_PATH created."
+else
+    echo "Directory $DIR_PATH already exists."
+fi
+
+# Check if the model directory exists
+if [ ! -d "$DIR_PATH/model" ]; then
+    # Directory does not exist, create it
+    mkdir -p "$DIR_PATH/model"
+    echo "Directory $DIR_PATH/model created."
+else
+    echo "Directory $DIR_PATH/model already exists."
+fi

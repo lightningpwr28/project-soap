@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::{self, Cursor};
 use std::path::Path;
 use zip::read::ZipArchive;
+use dirs::home_dir;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -18,7 +19,7 @@ pub struct Args {
         if cfg!(windows) {
             String::from("C:\\Program Files\\project-soap\\model\\")
         } else {
-            String::from("~/project-soap/model/")
+            String::from(home_dir().expect("Error getting user's home directory").to_str().expect("Error converting user's home directory to string")) + &String::from("/.project-soap/model/")
         }
     })]
     pub model: String,
@@ -63,7 +64,7 @@ fn model_location_exists(m: &str) -> Result<String, String> {
     if model_path.exists() {
         Ok(m.to_string())
     } else {
-        Err(format!("Model path ./{m} does not exist"))
+        Err(format!("Model path {m} does not exist"))
     }
 }
 
