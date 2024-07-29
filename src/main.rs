@@ -8,7 +8,8 @@ use std::thread::JoinHandle;
 use std::{fs, thread, usize};
 
 // For FFmpeg
-use std::{process::Command, time::Instant};
+use tokio::process::Command;
+use std::time::Instant;
 
 // For Vosk
 use hound;
@@ -20,7 +21,8 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Parses the CLI arguments
     let args = cli::Args::parse();
 
@@ -49,7 +51,7 @@ fn main() {
     }
 
     // Does the detection and removal
-    let mut cleaner = Cleaner::from_args(args);
+    let mut cleaner = Cleaner::from_args(args).await;
     cleaner.preprocess_audio();
     cleaner.find_and_remove_curses();
 
@@ -74,13 +76,13 @@ struct Cleaner {
 }
 impl Cleaner {
     // a constructor using the CLI arguments
-    fn from_args(args: cli::Args) -> Cleaner {
+    async fn from_args(args: cli::Args) -> Cleaner {
         let file_in = args.file_in.expect("No input file given");
 
         let san_file_in = file_in.replace("'", "");
 
         if file_in.contains("'") {
-            std::fs::rename(file_in, san_file_in.clone()).expect("Error moving file");
+            tokio::fs::rename(file_in, san_file_in.clone()).await.expect("Error moving file");
         }
         
 
@@ -126,7 +128,7 @@ impl Cleaner {
     }
 
     // preprocesses the input media file into a 16khz 16 bit mono pcm wav file for the model by using ffmpeg
-    fn preprocess_audio(&self) {
+    async fn preprocess_audio(&self) {
         let out = Command::new("ffmpeg")
             // allows ffmpeg to run automatically
             .arg("-y")
@@ -140,7 +142,7 @@ impl Cleaner {
             //.args(["-f", "s16le"])
             // sets the location of the temp audio file
             .arg(self.preprocessed_file_location.clone())
-            .output()
+            .output().await
             .expect("FFmpeg error");
 
         #[cfg(debug_assertions)]
@@ -148,7 +150,7 @@ impl Cleaner {
     }
 
     // sets up and does the cleaning
-    fn find_and_remove_curses(&mut self) {
+    async fn find_and_remove_curses(&mut self) {
         // Load the Vosk model
         let model = Model::new(self.model_location.clone()).expect("Could not create model");
 
@@ -171,7 +173,7 @@ impl Cleaner {
         let mut sample_chunks = samples.chunks(samples.len() / self.thread_number);
 
         // a vector to make it so we can wait for all the threads to finish before making the filters for ffmpeg
-        let mut threads: Vec<JoinHandle<()>> = Vec::new();
+        let mut threads = Vec::new();
 
         for i in 0..self.thread_number {
             //make and configure a new Recognizer
@@ -186,7 +188,7 @@ impl Cleaner {
             let temp_dir_name_copy = self.temp_dir_name.clone();
 
             // actually split off the thread
-            let thread = thread::spawn(move || {
+            let thread = tokio::spawn(async move{
                 Cleaner::split_threads(
                     temp_dir_name_copy,
                     &mut recognizer,
@@ -200,9 +202,7 @@ impl Cleaner {
         }
 
         // later is now
-        for thread in threads {
-            thread.join().expect("Error joining threads");
-        }
+        std::thread::join!(threads);
 
         // initializes a vector for the list of transcribed words and the temp json files' contents
         let mut times_in: Vec<vosk::Word> = Vec::new();
@@ -254,7 +254,7 @@ impl Cleaner {
     }
 
     // checks each word against the HashSet, makes a filter string to remove it if it is on the list, and then calls ffmpeg to remove it
-    fn remove_curses(&mut self, times_in: &[vosk::Word]) {
+    async fn remove_curses(&mut self, times_in: &[vosk::Word<'_>]) {
         // Stores the list of filters that determine which audio segments will be cut out
         let mut filter_string = String::new();
 
@@ -284,7 +284,7 @@ impl Cleaner {
                 .arg(filter_string)
                 .args(["-c:v", "copy"])
                 .arg(&format!("{}", self.out_location))
-                .output()
+                .output().await
                 .expect("failed to execute process");
 
             #[cfg(debug_assertions)]
@@ -328,7 +328,7 @@ impl Cleaner {
     }
 
     // the function for each of the threads to run
-    fn split_threads(
+    async fn split_threads(
         temp_dir_name: String,
         recognizer: &mut Recognizer,
         samples: Vec<i16>,
@@ -353,7 +353,7 @@ impl Cleaner {
         let name = format!("{}\\{}.json", temp_dir_name, thread_name);
 
         // writes it to file
-        fs::write(name, json!(curses).to_string()).expect(&format!(
+        tokio::fs::write(name, json!(curses).to_string()).await.expect(&format!(
             "Error outputting thread {} json to file",
             thread_name
         ));
