@@ -3,6 +3,7 @@ mod cli;
 use clap::Parser;
 
 mod backends;
+
 // To measure time elapsed
 use std::time::Instant;
 
