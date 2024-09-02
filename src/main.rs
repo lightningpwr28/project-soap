@@ -40,14 +40,19 @@ fn main() {
         overwrite = true;
 
         if cfg!(windows) {
-            out_location = String::from("C:\\Program Files\\project-soap\\model\\vosk")
+            out_location = String::from(
+                home_dir()
+                    .expect("Error getting user's home directory")
+                    .to_str()
+                    .expect("Error converting user's home directory to string"),
+            ) + &String::from("\\.project-soap\\temp")
         } else {
             out_location = String::from(
                 home_dir()
                     .expect("Error getting user's home directory")
                     .to_str()
                     .expect("Error converting user's home directory to string"),
-            ) + &String::from("/.project-soap/model/vosk")
+            ) + &String::from("/.project-soap/temp")
         }
     } else {
         overwrite = false;
@@ -61,7 +66,8 @@ fn main() {
         file_location.clone(),
         out_location.clone(),
     );
-    clean_up(overwrite, file_location, out_location);
+
+    if count != 0 {clean_up(overwrite, file_location, out_location)};
 
     let end = Instant::now();
 
@@ -132,8 +138,15 @@ fn load_expletives() -> HashSet<String> {
     let lines = read_lines("~/.project-soap/list.txt").expect("Error getting list of expletives");
 
     #[cfg(windows)]
-    let lines = read_lines("C:\\Program Files\\project-soap\\list.txt")
-        .expect("Error getting list of expletives");
+    let lines = read_lines(
+        home_dir()
+            .expect("Error getting user's home directory")
+            .to_str()
+            .expect("Error converting user's home directory to string")
+            .to_string()
+            + "\\.project-soap\\list.txt",
+    )
+    .expect("Error getting list of expletives");
 
     // Consumes the iterator, returns an (Optional) String
     for line in lines.flatten() {

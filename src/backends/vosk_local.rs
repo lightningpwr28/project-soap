@@ -32,9 +32,6 @@ pub struct VoskLocal {
     preprocessed_file_location: String,
     // the number of threads to run the model on
     thread_number: usize,
-    // where we'll put the cleaned file at the end - intended to be the same as file_location, but has the option of being different
-    out_location: String,
-    overwrite: bool,
     temp_dir_name: String,
 }
 impl VoskLocal {
@@ -96,18 +93,6 @@ impl VoskLocal {
 
     // cleans up the temp files that were generated
     fn clean_up(&self) {
-        // if we are overwriting the original file
-        if self.overwrite {
-            // read in the clean file
-            let clean_file =
-                fs::read(self.out_location.clone()).expect("Error reading clean file for clean up");
-
-            println!("{}", self.file_location);
-            // then write it to the original
-            fs::write(self.file_location.clone(), clean_file)
-                .expect("Error copying clean file to original");
-        }
-
         fs::remove_dir_all(self.temp_dir_name.clone()).expect("Error removing temp dir");
     }
 
@@ -284,14 +269,6 @@ impl Cleaner for VoskLocal {
         // start by making the temp directory - without this, writing the temp files will fail
         VoskLocal::make_temp_dir(temp_dir_name.clone());
 
-        let mut overwrite: bool = true;
-        let mut out_location = temp_dir_name.clone() + "\\" + &file_name.to_string();
-        // if the user didn't set a special out location
-        if args.out != "" {
-            out_location = args.out;
-            overwrite = false;
-        }
-
         // makes and returns the Cleaner struct
         Some(VoskLocal {
             model_location: m,
@@ -302,8 +279,6 @@ impl Cleaner for VoskLocal {
                 file_name.clone()
             ),
             thread_number: args.threads,
-            out_location,
-            overwrite,
             temp_dir_name,
         })
     }
