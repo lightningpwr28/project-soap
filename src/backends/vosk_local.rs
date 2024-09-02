@@ -22,7 +22,6 @@ use std::path::Path;
 use reqwest::blocking::Client;
 use std::io::Cursor;
 use zip::read::ZipArchive;
-use dirs::home_dir;
 
 pub struct VoskLocal {
     // the path to the model
@@ -321,23 +320,6 @@ impl VoskLocal {
         }
     }
 
-    //Input validator - checks if the thread number is less than the total number of threads the system has
-    fn thread_number_in_range(t: &str) -> Result<usize, String> {
-        let thread_number: usize = t.parse().map_err(|_| {
-            format!("'{t}' isn't a correct value for the number of threads to run on")
-        })?;
-
-        let max_threads: usize = std::thread::available_parallelism()
-            .expect("Error getting system available parallelism")
-            .into();
-
-        if (1..=max_threads).contains(&thread_number) {
-            Ok(thread_number)
-        } else {
-            Err(format!("Thread number not in range {}-{}", 1, max_threads))
-        }
-    }
-
     pub fn get_model(model: &str, model_path: String) {
         let url = match model {
             "small" => "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
@@ -355,7 +337,8 @@ impl VoskLocal {
         println!("Getting model '{}' at {}", model, url);
 
         // Download the ZIP file
-        let zip_data = VoskLocal::download_file(url).expect(&format!("Error downloading file: {}", url));
+        let zip_data =
+            VoskLocal::download_file(url).expect(&format!("Error downloading file: {}", url));
 
         // Unzip the downloaded file
         VoskLocal::unzip_file(&zip_data, output_dir).expect("Error unzipping file");
@@ -434,7 +417,39 @@ impl VoskLocal {
 }
 
 impl Cleaner for VoskLocal {
-    fn from_args(args: cli::Args) -> impl Cleaner {
+    fn from_args(args: cli::Args) -> Option<impl Cleaner> {
+        let c;
+        let m: String;
+
+        match args.backend {
+            cli::Backend::VoskLocalArgs { model, command } => {
+                m = model;
+                c = command;
+            }
+        }
+
+        if c.is_some() {
+            let command = c.as_ref().unwrap();
+
+            match command {
+                VoskLocalCommands::GetModel {
+                    small,
+                    medium,
+                    large,
+                } => {
+                    if *small {
+                        VoskLocal::get_model("small", m);
+                    } else if *medium {
+                        VoskLocal::get_model("medium", m);
+                    } else if *large {
+                        VoskLocal::get_model("large", m);
+                    }
+                }
+            }
+
+            return None;
+        }
+
         let file_in = args.file_in.expect("No input file given");
 
         let san_file_in = file_in.replace("'", "");
@@ -469,8 +484,8 @@ impl Cleaner for VoskLocal {
         }
 
         // makes and returns the Cleaner struct
-        VoskLocal {
-            model_location: args.model,
+        Some(VoskLocal {
+            model_location: m,
             file_location: san_file_in,
             preprocessed_file_location: format!(
                 "{}\\{}.wav",
@@ -481,11 +496,29 @@ impl Cleaner for VoskLocal {
             out_location,
             overwrite,
             temp_dir_name,
-        }
+        })
     }
 
     fn clean(&mut self) {
         self.preprocess_audio();
         self.find_and_remove_curses();
     }
+}
+
+#[derive(clap::Subcommand, PartialEq)]
+pub enum VoskLocalCommands {
+    /// Download a Vosk model from the web
+    GetModel {
+        /// vosk-model-small-en-us-0.15 - 40Mb - small, lightweight, not very accurate
+        //#[arg(long, group = "model")]
+        small: bool,
+
+        /// vosk-model-en-us-0.22-lgraph - 128Mb - fairly small, more accurate
+        //#[arg(long, group = "model")]
+        medium: bool,
+
+        /// vosk-model-en-us-0.22 - 1.8Gb - big, even more accurate, requires a lot of RAM
+        //#[arg(long, group = "model")]
+        large: bool,
+    },
 }
