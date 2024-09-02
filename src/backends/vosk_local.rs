@@ -143,7 +143,7 @@ impl VoskLocal {
             std::fs::remove_dir_all(output_dir).expect("Error removing current model");
         }
 
-        println!("Getting model '{}' at {}", model, url);
+        println!("Getting model '{}' at {} ...", model, url);
 
         // Download the ZIP file
         let zip_data =
@@ -408,15 +408,15 @@ pub enum VoskLocalCommands {
     /// Download a Vosk model from the web
     GetModel {
         /// vosk-model-small-en-us-0.15 - 40Mb - small, lightweight, not very accurate
-        //#[arg(long, group = "model")]
+        #[arg(long, group = "model")]
         small: bool,
 
         /// vosk-model-en-us-0.22-lgraph - 128Mb - fairly small, more accurate
-        //#[arg(long, group = "model")]
+        #[arg(long, group = "model")]
         medium: bool,
 
         /// vosk-model-en-us-0.22 - 1.8Gb - big, even more accurate, requires a lot of RAM
-        //#[arg(long, group = "model")]
+        #[arg(long, group = "model")]
         large: bool,
     },
 }

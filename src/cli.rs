@@ -1,5 +1,5 @@
 use clap::Parser;
-use std::path::Path;
+use std::{fs, path::Path};
 use dirs::home_dir;
 
 use crate::backends::vosk_local;
@@ -15,14 +15,14 @@ pub struct Args {
     #[arg(short, long, default_value_t = String::from(""))]
     pub out: String,
 
-    #[command(subcommand)]
-    pub backend: Backend,
-
     /// Number of threads to run on - default is all system threads
     #[arg(value_parser = thread_number_in_range, short, long, default_value_t = std::thread::available_parallelism()
         .expect("Error getting system available parallelism")
         .into())]
     pub threads: usize,
+
+    #[command(subcommand)]
+    pub backend: Backend,
 
 }
 
@@ -33,7 +33,7 @@ pub enum Backend {
     #[arg(value_parser = model_location_exists, short, long, default_value_t = {
         
         if cfg!(windows) {
-            String::from("C:\\Program Files\\project-soap\\model\\vosk")
+            String::from(home_dir().expect("Error getting user's home directory").to_str().expect("Error converting user's home directory to string")) + &String::from("\\.project-soap\\model\\vosk")
         } else {
             String::from(home_dir().expect("Error getting user's home directory").to_str().expect("Error converting user's home directory to string")) + &String::from("/.project-soap/model/vosk")
         }
@@ -49,12 +49,19 @@ pub enum Backend {
 
 // Input validator - checks if the model path exists
 fn model_location_exists(m: &str) -> Result<String, String> {
+
     let model_path = Path::new(m);
 
     if model_path.exists() {
         Ok(m.to_string())
     } else {
-        Err(format!("Model path {m} does not exist"))
+        let r = fs::DirBuilder::new().recursive(true).create(model_path);
+        
+        match r {
+            Ok(_) => Ok(m.to_string()),
+            Err(error_message) => Err(format!("Error making a directory for the model: {}", error_message))
+        }
+
     }
 }
 
