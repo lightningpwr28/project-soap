@@ -309,17 +309,6 @@ impl VoskLocal {
         }
     }
 
-    // Input validator - checks if the model path exists
-    fn model_location_exists(m: &str) -> Result<String, String> {
-        let model_path = Path::new(m);
-
-        if model_path.exists() {
-            Ok(m.to_string())
-        } else {
-            Err(format!("Model path {m} does not exist"))
-        }
-    }
-
     pub fn get_model(model: &str, model_path: String) {
         let url = match model {
             "small" => "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
@@ -422,7 +411,7 @@ impl Cleaner for VoskLocal {
         let m: String;
 
         match args.backend {
-            cli::Backend::VoskLocalArgs { model, command } => {
+            cli::Backend::VoskLocal { model, command } => {
                 m = model;
                 c = command;
             }

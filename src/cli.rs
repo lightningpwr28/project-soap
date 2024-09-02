@@ -28,7 +28,7 @@ pub struct Args {
 
 #[derive(clap::Subcommand, PartialEq)]
 pub enum Backend {
-    VoskLocalArgs {
+    VoskLocal {
         /// Path to a Vosk model - default is the model included
     #[arg(value_parser = model_location_exists, short, long, default_value_t = {
         
