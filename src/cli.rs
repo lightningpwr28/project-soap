@@ -44,6 +44,14 @@ pub enum Backend {
     #[command(subcommand)]
     command: Option<vosk_local::VoskLocalCommands>,
     },
+
+    WhisperXLocal {
+        #[arg(long)]
+        other_options: String,
+
+        #[arg(long)]
+        setup: bool
+    },
     
 }
 

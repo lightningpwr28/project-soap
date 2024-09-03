@@ -27,6 +27,13 @@ fn main() {
 
     let cleaner = match args.backend {
         cli::Backend::VoskLocal { .. } => backends::vosk_local::VoskLocal::from_args(args),
+        cli::Backend::WhisperXLocal { .. } => {
+            backends::whisperx_local::WhisperXLocal::from_args(args)
+        }
+        _ => {
+            println!("Error: Please choose a backend");
+            return;
+        }
     };
 
     let mut cleaner = match cleaner {
@@ -67,7 +74,9 @@ fn main() {
         out_location.clone(),
     );
 
-    if count != 0 {clean_up(overwrite, file_location, out_location)};
+    if count != 0 {
+        clean_up(overwrite, file_location, out_location)
+    };
 
     let end = Instant::now();
 

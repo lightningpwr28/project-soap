@@ -1,6 +1,7 @@
 use crate::cli;
 
 pub mod vosk_local;
+pub mod whisperx_local;
 
 pub trait Cleaner {
     fn from_args(args: cli::Args) -> Option<impl Cleaner>;

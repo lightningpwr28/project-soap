@@ -219,7 +219,9 @@ impl Cleaner for VoskLocal {
             cli::Backend::VoskLocal { model, command } => {
                 m = model;
                 c = command;
-            }
+            },
+
+            _ => panic!("VoskLocal tried to initialize when other backend selected")
         }
 
         if c.is_some() {
