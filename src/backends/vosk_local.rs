@@ -35,6 +35,81 @@ pub struct VoskLocal {
     temp_dir_name: String,
 }
 impl VoskLocal {
+
+    pub fn from_args(args: cli::Args) -> Option<Box<dyn Cleaner>> {
+        let c;
+        let m: String;
+
+        match args.backend {
+            cli::Backend::VoskLocal { model, command } => {
+                m = model;
+                c = command;
+            },
+
+            _ => panic!("VoskLocal tried to initialize when other backend selected")
+        }
+
+        if c.is_some() {
+            let command = c.as_ref().unwrap();
+
+            match command {
+                VoskLocalCommands::GetModel {
+                    small,
+                    medium,
+                    large,
+                } => {
+                    if *small {
+                        VoskLocal::get_model("small", m);
+                    } else if *medium {
+                        VoskLocal::get_model("medium", m);
+                    } else if *large {
+                        VoskLocal::get_model("large", m);
+                    }
+                }
+            }
+
+            return None;
+        }
+
+        let file_in = args.file_in.expect("No input file given");
+
+        let san_file_in = file_in.replace("'", "");
+
+        if file_in.contains("'") {
+            std::fs::rename(file_in, san_file_in.clone()).expect("Error moving file");
+        }
+
+        // gets the file's name by itself
+        let path = Path::new(&san_file_in);
+        let file_name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .expect("Error getting file name")
+            .to_string();
+
+        #[cfg(unix)]
+        let temp_dir_name = format!("./temp'{}'", file_name);
+
+        #[cfg(windows)]
+        let temp_dir_name = format!(".\\temp'{}'", file_name);
+
+        // start by making the temp directory - without this, writing the temp files will fail
+        VoskLocal::make_temp_dir(temp_dir_name.clone());
+
+        // makes and returns the Cleaner struct
+        Some(Box::new(VoskLocal {
+            model_location: m,
+            file_location: san_file_in,
+            preprocessed_file_location: format!(
+                "{}\\{}.wav",
+                temp_dir_name.clone(),
+                file_name.clone()
+            ),
+            thread_number: args.threads,
+            temp_dir_name,
+        }))
+    }
+
     // preprocesses the input media file into a 16khz 16 bit mono pcm wav file for the model by using ffmpeg
     fn preprocess_audio(&self) {
         let out = Command::new("ffmpeg")
@@ -211,79 +286,6 @@ impl VoskLocal {
 }
 
 impl Cleaner for VoskLocal {
-    fn from_args(args: cli::Args) -> Option<impl Cleaner> {
-        let c;
-        let m: String;
-
-        match args.backend {
-            cli::Backend::VoskLocal { model, command } => {
-                m = model;
-                c = command;
-            },
-
-            _ => panic!("VoskLocal tried to initialize when other backend selected")
-        }
-
-        if c.is_some() {
-            let command = c.as_ref().unwrap();
-
-            match command {
-                VoskLocalCommands::GetModel {
-                    small,
-                    medium,
-                    large,
-                } => {
-                    if *small {
-                        VoskLocal::get_model("small", m);
-                    } else if *medium {
-                        VoskLocal::get_model("medium", m);
-                    } else if *large {
-                        VoskLocal::get_model("large", m);
-                    }
-                }
-            }
-
-            return None;
-        }
-
-        let file_in = args.file_in.expect("No input file given");
-
-        let san_file_in = file_in.replace("'", "");
-
-        if file_in.contains("'") {
-            std::fs::rename(file_in, san_file_in.clone()).expect("Error moving file");
-        }
-
-        // gets the file's name by itself
-        let path = Path::new(&san_file_in);
-        let file_name = path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .expect("Error getting file name")
-            .to_string();
-
-        #[cfg(unix)]
-        let temp_dir_name = format!("./temp'{}'", file_name);
-
-        #[cfg(windows)]
-        let temp_dir_name = format!(".\\temp'{}'", file_name);
-
-        // start by making the temp directory - without this, writing the temp files will fail
-        VoskLocal::make_temp_dir(temp_dir_name.clone());
-
-        // makes and returns the Cleaner struct
-        Some(VoskLocal {
-            model_location: m,
-            file_location: san_file_in,
-            preprocessed_file_location: format!(
-                "{}\\{}.wav",
-                temp_dir_name.clone(),
-                file_name.clone()
-            ),
-            thread_number: args.threads,
-            temp_dir_name,
-        })
-    }
 
     fn transcribe(&mut self) -> Vec<crate::backends::Word> {
         self.preprocess_audio();

@@ -10,9 +10,8 @@ impl WhisperXLocal {
         // here I need to install the dependencies of WhisperX and WhisperX itself
         todo!()
     }
-}
-impl Cleaner for WhisperXLocal {
-    fn from_args(args: cli::Args) -> Option<impl Cleaner> {
+
+    pub fn from_args(args: cli::Args) -> Option<Box<dyn Cleaner>> {
         let s: bool;
         let whisperx_args: String;
 
@@ -34,12 +33,13 @@ impl Cleaner for WhisperXLocal {
 
         let file_location = args.file_in.expect("no file given");
 
-        Some(WhisperXLocal {
+        Some(Box::new(WhisperXLocal {
             file_location,
             other_options: whisperx_args,
-        })
+        }))
     }
-
+}
+impl Cleaner for WhisperXLocal {
     fn transcribe(&mut self) -> Vec<super::Word> {
         let out = Command::new("whisperx")
             .arg(self.file_location.clone())
