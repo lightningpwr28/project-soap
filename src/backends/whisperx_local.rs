@@ -44,6 +44,7 @@ impl Cleaner for WhisperXLocal {
         let out = Command::new("whisperx")
             .arg(self.file_location.clone())
             .args(["--highlight_words", "True"])
+            .arg("--output_format json")
             .arg(self.other_options.clone())
             .output()
             .expect("Error running WhisperX");

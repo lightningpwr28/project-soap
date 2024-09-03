@@ -1,7 +1,5 @@
 use enum_dispatch::enum_dispatch;
 
-use crate::cli;
-
 pub mod vosk_local;
 pub mod whisperx_local;
 

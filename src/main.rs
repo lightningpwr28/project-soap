@@ -1,6 +1,5 @@
 // For the CLI
 mod cli;
-use backends::Cleaner;
 use clap::Parser;
 use dirs::home_dir;
 use std::fs;
@@ -29,10 +28,6 @@ fn main() {
         cli::Backend::VoskLocal { .. } => backends::vosk_local::VoskLocal::from_args(args),
         cli::Backend::WhisperXLocal { .. } => {
             backends::whisperx_local::WhisperXLocal::from_args(args)
-        }
-        _ => {
-            println!("Error: Please choose a backend");
-            return;
         }
     };
 
