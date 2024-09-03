@@ -35,7 +35,6 @@ pub struct VoskLocal {
     temp_dir_name: String,
 }
 impl VoskLocal {
-
     pub fn from_args(args: cli::Args) -> Option<Box<dyn Cleaner>> {
         let c;
         let m: String;
@@ -44,9 +43,9 @@ impl VoskLocal {
             cli::Backend::VoskLocal { model, command } => {
                 m = model;
                 c = command;
-            },
+            }
 
-            _ => panic!("VoskLocal tried to initialize when other backend selected")
+            _ => panic!("VoskLocal tried to initialize when other backend selected"),
         }
 
         if c.is_some() {
@@ -286,7 +285,6 @@ impl VoskLocal {
 }
 
 impl Cleaner for VoskLocal {
-
     fn transcribe(&mut self) -> Vec<crate::backends::Word> {
         self.preprocess_audio();
 
