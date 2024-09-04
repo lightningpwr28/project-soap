@@ -4,7 +4,7 @@ use serde::Deserialize;
 use serde_json::from_str;
 
 use crate::{backends::Cleaner, cli};
-use std::{fs::File, io::Read, process::Command};
+use std::{fs::File, io::Read, path::Path, process::Command};
 
 pub struct WhisperXLocal {
     file_location: String,
@@ -16,12 +16,11 @@ impl WhisperXLocal {
         todo!()
     }
 
-    fn serialize(&self) -> Vec<super::Word>{
-
+    fn serialize(&self, file_name: String) -> Vec<super::Word> {
         #[derive(Deserialize)]
         struct WhisperXJson {
             segments: Vec<WhisperXSegment>,
-            language: String
+            language: String,
         }
 
         #[derive(Deserialize)]
@@ -29,8 +28,7 @@ impl WhisperXLocal {
             start: f32,
             end: f32,
             text: String,
-            words: Vec<WhisperXWord>
-
+            words: Vec<WhisperXWord>,
         }
 
         #[derive(Deserialize)]
@@ -38,12 +36,12 @@ impl WhisperXLocal {
             word: String,
             start: f32,
             end: f32,
-            score: f32
+            score: f32,
         }
 
         impl From<WhisperXWord> for crate::backends::Word {
             fn from(value: WhisperXWord) -> Self {
-                let word = value.word.to_string();
+                let word = value.word;
                 let start = value.start;
                 let end = value.end;
 
@@ -53,9 +51,10 @@ impl WhisperXLocal {
 
         // here I need to serialize the output of whisperx
         // Using the json output, I think the structure is like {segments: {text, words [what we actually want]}}
-        let mut file = File::open(self.file_location.clone()).expect("Error opening transcription file");
+        let mut file = File::open(file_name).expect("Error opening transcription file");
         let mut json_string = String::new();
-        file.read_to_string(&mut json_string).expect("Error serializing json");
+        file.read_to_string(&mut json_string)
+            .expect("Error serializing json");
 
         let json: WhisperXJson = from_str(&json_string).expect("Error getting Value form json");
 
@@ -100,33 +99,41 @@ impl WhisperXLocal {
 }
 impl Cleaner for WhisperXLocal {
     fn transcribe(&mut self) -> Vec<super::Word> {
+        let temp_dir = {
+            if cfg!(windows) {
+                String::from(
+                    home_dir()
+                        .expect("Error getting user's home directory")
+                        .to_str()
+                        .expect("Error converting user's home directory to string"),
+                ) + &String::from("\\.project-soap\\temp")
+            } else {
+                String::from(
+                    home_dir()
+                        .expect("Error getting user's home directory")
+                        .to_str()
+                        .expect("Error converting user's home directory to string"),
+                ) + &String::from("/.project-soap/temp")
+            }
+        };
+
+        let binding = self.file_location.clone();
+        let out_file_name = Path::new(&binding)
+            .file_stem()
+            .expect("error getting in file name to find output json")
+            .to_str()
+            .expect("Error converting file name to string");
+
         let out = Command::new("whisperx")
             .arg(self.file_location.clone())
-            .args([
-                "--output_dir",
-                &{if cfg!(windows) {
-                    String::from(
-                        home_dir()
-                            .expect("Error getting user's home directory")
-                            .to_str()
-                            .expect("Error converting user's home directory to string"),
-                    ) + &String::from("\\.project-soap\\temp")
-                } else {
-                    String::from(
-                        home_dir()
-                            .expect("Error getting user's home directory")
-                            .to_str()
-                            .expect("Error converting user's home directory to string"),
-                    ) + &String::from("/.project-soap/temp")
-                }},
-            ])
+            .args(["--output_dir", &temp_dir.clone()])
             .arg("--highlight_words True")
             .arg("--output_format json")
-            .arg(self.other_options.clone())
+            .args(self.other_options.clone().split(' ').collect::<Vec<&str>>())
             .output()
             .expect("Error running WhisperX");
 
         print!("{:#?}", out);
-        return self.serialize();
+        return self.serialize(String::from(temp_dir + out_file_name + ".json"));
     }
 }
