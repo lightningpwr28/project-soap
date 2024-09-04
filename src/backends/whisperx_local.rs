@@ -4,7 +4,7 @@ use serde::Deserialize;
 use serde_json::from_str;
 
 use crate::{backends::Cleaner, cli};
-use std::{fs::File, io::{self, Read}, process::Command};
+use std::{fs::File, io::Read, process::Command};
 
 pub struct WhisperXLocal {
     file_location: String,
