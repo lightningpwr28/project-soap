@@ -6,12 +6,12 @@ project-soap is an open source command line program that removes expletives from
 
 ### Requirements
 
-FFmpeg is required for project-soap to function.
+FFmpeg is required for project-soap to function. Different backends may have other additional requirements.
 
 ### Steps
 
 1. Download the latest release [here](https://github.com/lightningpwr28/project-soap/releases)
-2. Run ``project-soap get-model --large``, or download another model from [Alpha Cephei](https://alphacephei.com/vosk/models) or elsewhere
+2. Configure your backend of choice. I recommend using [Vosk](/backends/vosklocal.md) for cpu inferencing and [WhisperX](/backends/whisperxlocal.md) if you have an Nvidia gpu.
 
 ## Usage
 I recommend using this tool in conjunction with [Stacher](https://stacher.io/) and it's custom post-processing feature - simply add ``project-soap {}`` to a new line!

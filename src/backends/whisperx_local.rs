@@ -71,22 +71,26 @@ impl WhisperXLocal {
 
     pub fn from_args(args: cli::Args) -> Option<Box<dyn Cleaner>> {
         let s: bool;
-        let whisperx_args: String;
+        let mut whisperx_args: String;
 
         match args.backend {
             cli::Backend::WhisperXLocal {
                 other_options,
-                setup,
+                // setup,
             } => {
                 whisperx_args = other_options;
-                s = setup;
+                // s = setup;
             }
             _ => panic!("WhisperXLocal tried to initialize when other backend selected"),
         }
 
-        if s {
-            WhisperXLocal::setup();
-            return None;
+        // if s {
+        //     WhisperXLocal::setup();
+        //     return None;
+        // }
+
+        if whisperx_args.contains("--device cpu") {
+            whisperx_args = whisperx_args + &format!("--threads {}", args.threads);
         }
 
         let file_location = args.file_in.expect("no file given");
