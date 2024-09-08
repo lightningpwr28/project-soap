@@ -12,8 +12,42 @@ pub struct WhisperXLocal {
 }
 impl WhisperXLocal {
     fn setup() {
-        // here I need to install the dependencies of WhisperX and WhisperX itself
-        todo!()
+        #[cfg(windows)]
+        std::env::var("CUDA_PATH").expect("CUDA Toolkit not installed or not in PATH");
+
+        #[cfg(unix)]
+        if !Path::new("/usr/local/cuda").exists() {
+            panic!("CUDA Toolkit may not be installed; Symlink at /usr/local/cuda may not exist")
+        }
+
+        Command::new("conda")
+            .arg("create")
+            .args(["--name", "whisperx"])
+            .arg("python=3.10")
+            .spawn()
+            .expect("Error running making conda environment");
+
+        let output = Command::new("conda")
+            .arg("install")
+            .arg("pytorch==2.0.0")
+            .arg("torchaudio==2.0.0")
+            .arg("pytorch-cuda=11.8")
+            .args(["-c", "pytorch"])
+            .args(["-c", "nvidia"])
+            .output()
+            .expect("Error installing required dependencies");
+
+        #[cfg(debug_assertions)]
+        println!("{:#?}", output);
+
+        Command::new("pip")
+            .arg("install")
+            .arg("git+https://github.com/m-bain/whisperx.git@v3.1.1")
+            .arg("--upgrade")
+            .output()
+            .expect("Error installing WhisperX");
+
+        println!("Finished installing WhisperX");
     }
 
     fn serialize(&self, file_name: String) -> Vec<super::Word> {
