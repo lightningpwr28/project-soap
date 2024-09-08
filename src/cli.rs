@@ -52,9 +52,9 @@ pub enum Backend {
         #[arg(long, default_value_t = String::from("--model large-v2 --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 4 --compute_type int8 --language en --print_progress True"))]
         other_options: String,
 
-        // /// Whether or not to install WhisperX (currently unimplemented)
-        // #[arg(long)]
-        // setup: bool
+        /// Whether or not to install WhisperX
+        #[arg(long)]
+        setup: bool
     },
     
 }

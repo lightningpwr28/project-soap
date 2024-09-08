@@ -110,18 +110,18 @@ impl WhisperXLocal {
         match args.backend {
             cli::Backend::WhisperXLocal {
                 other_options,
-                // setup,
+                setup,
             } => {
                 whisperx_args = other_options;
-                // s = setup;
+                s = setup;
             }
             _ => panic!("WhisperXLocal tried to initialize when other backend selected"),
         }
 
-        // if s {
-        //     WhisperXLocal::setup();
-        //     return None;
-        // }
+        if s {
+            WhisperXLocal::setup();
+            return None;
+        }
 
         if whisperx_args.contains("--device cpu") {
             whisperx_args = whisperx_args + &format!("--threads {}", args.threads);
