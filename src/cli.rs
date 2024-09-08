@@ -8,6 +8,11 @@ use crate::backends::vosk_local;
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub struct Args {
+
+    /// The backend that transcribes the audio
+    #[command(subcommand)]
+    pub backend: Backend,
+
     /// File to clean
     pub file_in: Option<String>,
 
@@ -20,10 +25,6 @@ pub struct Args {
         .expect("Error getting system available parallelism")
         .into())]
     pub threads: usize,
-
-    /// The backend that transcribes the audio
-    #[command(subcommand)]
-    pub backend: Backend,
 
 }
 
