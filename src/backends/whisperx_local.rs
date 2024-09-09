@@ -11,7 +11,9 @@ pub struct WhisperXLocal {
     other_options: String,
 }
 impl WhisperXLocal {
+    // checks for some of the required dependencies of and runs the suggested installation commands of WhisperX
     fn setup() {
+        // It seems like with a default install of the CUDA Toolkit, these will exist
         #[cfg(windows)]
         std::env::var("CUDA_PATH").expect("CUDA Toolkit not installed or not in PATH");
 
@@ -20,6 +22,7 @@ impl WhisperXLocal {
             panic!("CUDA Toolkit may not be installed; Symlink at /usr/local/cuda may not exist")
         }
 
+        // makes the conda env
         Command::new("conda")
             .arg("create")
             .args(["--name", "whisperx"])
@@ -27,6 +30,7 @@ impl WhisperXLocal {
             .spawn()
             .expect("Error running making conda environment");
 
+        // installs the heavy hitters
         let output = Command::new("conda")
             .arg("install")
             .arg("pytorch==2.0.0")
@@ -40,6 +44,7 @@ impl WhisperXLocal {
         #[cfg(debug_assertions)]
         println!("{:#?}", output);
 
+        // installs whisperx
         Command::new("pip")
             .arg("install")
             .arg("git+https://github.com/m-bain/whisperx.git@v3.1.1")
@@ -50,18 +55,19 @@ impl WhisperXLocal {
         println!("Finished installing WhisperX");
     }
 
+    // This function serializes WhisperX's standard json output inso a more easily manipulatable Rust Struct
     fn serialize(&self, file_name: String) -> Vec<super::Word> {
         #[derive(Deserialize)]
         struct WhisperXJson {
             segments: Vec<WhisperXSegment>,
-            language: String,
+            _language: String,
         }
 
         #[derive(Deserialize)]
         struct WhisperXSegment {
-            start: f32,
-            end: f32,
-            text: String,
+            _start: f32,
+            _end: f32,
+            _text: String,
             words: Vec<WhisperXWord>,
         }
 
@@ -70,9 +76,10 @@ impl WhisperXLocal {
             word: String,
             start: f32,
             end: f32,
-            score: f32,
+            _score: f32,
         }
 
+        // This is so I can easily convert WhisperX's output to my own internal values
         impl From<WhisperXWord> for crate::backends::Word {
             fn from(value: WhisperXWord) -> Self {
                 let word = value.word;
@@ -83,14 +90,13 @@ impl WhisperXLocal {
             }
         }
 
-        // here I need to serialize the output of whisperx
         // Using the json output, I think the structure is like {segments: {text, words [what we actually want]}}
         let mut file = File::open(file_name).expect("Error opening transcription file");
         let mut json_string = String::new();
         file.read_to_string(&mut json_string)
             .expect("Error serializing json");
 
-        let json: WhisperXJson = from_str(&json_string).expect("Error getting Value form json");
+        let json: WhisperXJson = from_str(&json_string).expect("Error getting Value from json");
 
         let mut words: Vec<crate::backends::Word> = Vec::new();
 
@@ -103,9 +109,10 @@ impl WhisperXLocal {
         return words;
     }
 
+    // initializes the cleaner from input args
     pub fn from_args(args: cli::Args) -> Option<Box<dyn Cleaner>> {
         let s: bool;
-        let mut whisperx_args: String;
+        let whisperx_args: String;
 
         match args.backend {
             cli::Backend::WhisperXLocal {
@@ -123,10 +130,6 @@ impl WhisperXLocal {
             return None;
         }
 
-        if whisperx_args.contains("--device cpu") {
-            whisperx_args = whisperx_args + &format!("--threads {}", args.threads);
-        }
-
         let file_location = args.file_in.expect("no file given");
 
         Some(Box::new(WhisperXLocal {
@@ -136,6 +139,7 @@ impl WhisperXLocal {
     }
 }
 impl Cleaner for WhisperXLocal {
+    // transcribes the audio
     fn transcribe(&mut self) -> Vec<super::Word> {
         let temp_dir = {
             if cfg!(windows) {
