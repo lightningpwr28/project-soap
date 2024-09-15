@@ -36,7 +36,16 @@ fn main() {
         None => return,
     };
 
+    let file_location = file_location.expect("Please input a file to clean");
+
     let overwrite;
+
+    let binding = file_location.clone();
+    let out_file_name = Path::new(&binding)
+        .file_name()
+        .expect("error getting in file name to find output json")
+        .to_str()
+        .expect("Error converting file name to string");
 
     if out_location == "" {
         overwrite = true;
@@ -47,20 +56,20 @@ fn main() {
                     .expect("Error getting user's home directory")
                     .to_str()
                     .expect("Error converting user's home directory to string"),
-            ) + &String::from("\\.project-soap\\temp")
+            ) + &String::from("\\.project-soap\\temp\\")
+                + out_file_name
         } else {
             out_location = String::from(
                 home_dir()
                     .expect("Error getting user's home directory")
                     .to_str()
                     .expect("Error converting user's home directory to string"),
-            ) + &String::from("/.project-soap/temp")
+            ) + &String::from("/.project-soap/temp/")
+                + out_file_name
         }
     } else {
         overwrite = false;
     }
-
-    let file_location = file_location.expect("Please input a file to clean");
 
     let count = remove_expletives(
         load_expletives(),
@@ -181,6 +190,6 @@ fn clean_up(overwrite: bool, file_location: String, out_location: String) {
         // then write it to the original
         fs::write(file_location.clone(), clean_file).expect("Error copying clean file to original");
 
-        fs::remove_file(out_location).expect("Error removing temporary file");
+        fs::remove_file(out_location).expect("Error removing temporary files");
     }
 }

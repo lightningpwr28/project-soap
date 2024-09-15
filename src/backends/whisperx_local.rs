@@ -60,34 +60,39 @@ impl WhisperXLocal {
         #[derive(Deserialize)]
         struct WhisperXJson {
             segments: Vec<WhisperXSegment>,
-            _language: String,
+            #[allow(dead_code)]
+            language: String,
         }
 
+        #[allow(dead_code)]
         #[derive(Deserialize)]
         struct WhisperXSegment {
-            _start: f32,
-            _end: f32,
-            _text: String,
+            start: f32,
+            end: f32,
+            text: String,
             words: Vec<WhisperXWord>,
         }
 
         #[derive(Deserialize)]
         struct WhisperXWord {
             word: String,
-            start: f32,
-            end: f32,
-            _score: f32,
+            start: Option<f32>,
+            end: Option<f32>,
+            #[allow(dead_code)]
+            score: Option<f32>,
         }
 
         // This is so I can easily convert WhisperX's output to my own internal values
-        impl From<WhisperXWord> for crate::backends::Word {
-            fn from(value: WhisperXWord) -> Self {
+        impl TryFrom<WhisperXWord> for crate::backends::Word {
+            fn try_from(value: WhisperXWord) -> Result<Self, Self::Error> {
                 let word = value.word;
-                let start = value.start;
-                let end = value.end;
+                let start = value.start.ok_or(())?;
+                let end = value.end.ok_or(())?;
 
-                crate::backends::Word { word, start, end }
+                Ok(crate::backends::Word { word, start, end })
             }
+
+            type Error = ();
         }
 
         // Using the json output, I think the structure is like {segments: {text, words [what we actually want]}}
@@ -102,7 +107,10 @@ impl WhisperXLocal {
 
         for segment in json.segments {
             for word in segment.words {
-                words.push(word.into());
+                match word.try_into() {
+                    Ok(w) => words.push(w),
+                    Err(_) => continue,
+                }
             }
         }
 
@@ -148,14 +156,14 @@ impl Cleaner for WhisperXLocal {
                         .expect("Error getting user's home directory")
                         .to_str()
                         .expect("Error converting user's home directory to string"),
-                ) + &String::from("\\.project-soap\\temp")
+                ) + &String::from("\\.project-soap\\temp\\")
             } else {
                 String::from(
                     home_dir()
                         .expect("Error getting user's home directory")
                         .to_str()
                         .expect("Error converting user's home directory to string"),
-                ) + &String::from("/.project-soap/temp")
+                ) + &String::from("/.project-soap/temp/")
             }
         };
 
@@ -169,13 +177,17 @@ impl Cleaner for WhisperXLocal {
         let out = Command::new("whisperx")
             .arg(self.file_location.clone())
             .args(["--output_dir", &temp_dir.clone()])
-            .arg("--highlight_words True")
-            .arg("--output_format json")
-            .args(self.other_options.clone().split(' ').collect::<Vec<&str>>())
+            .args(["--highlight_words", "True"])
+            .args(["--output_format", "json"])
+            .args(self.other_options.clone().split(' '))
             .output()
             .expect("Error running WhisperX");
 
         print!("{:#?}", out);
+        println!(
+            "{}",
+            String::from(temp_dir.clone() + out_file_name + ".json")
+        );
         return self.serialize(String::from(temp_dir + out_file_name + ".json"));
     }
 }
