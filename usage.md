@@ -3,7 +3,7 @@ This file contains backend-agnostic options. For backend-specific options, see t
 # Usage
 
 ```
-project-soap [backend] [input file location] [options]
+project-soap [options] [input file location] [backend]
 ```
 
 ## Backend
