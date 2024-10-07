@@ -2,7 +2,6 @@
 mod cli;
 use clap::Parser;
 use dirs::home_dir;
-use std::env::temp_dir;
 use std::fs;
 use std::process::Command;
 
