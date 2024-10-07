@@ -1,6 +1,6 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-	<Package Name="project-soap" Manufacturer="lightningpwr28" Version="1.0.0"
-		UpgradeCode="c6d487b3-37c6-4057-9108-e1679f1aa6ce">
+	<Package Name="project-soap" Manufacturer="lightningpwr28" Version="2.0.0"
+		UpgradeCode="44a87664-71b8-4847-8799-1e8ac5ab17c1">
 		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
 
 		<Media Id="1" Cabinet="cab1.cab" EmbedCab="yes" />
@@ -42,7 +42,7 @@
 				<File Source="..\..\list.txt" />
 			</Component>
 			
-			<Component Id="CreateModelFolder" Directory="ModelFolder" Guid="e1f6d2a9-5915-45f1-a169-6c0d463c0c8a">
+			<Component Id="CreateModelFolder" Directory="ModelFolder" Guid="ae68040e-b80e-4217-b33a-35d3ec3ba257">
 				<CreateFolder />
 			</Component>
 
