@@ -183,11 +183,14 @@ impl Cleaner for WhisperXLocal {
             .output()
             .expect("Error running WhisperX");
 
+        #[cfg(debug_assertions)]
         print!("{:#?}", out);
+        #[cfg(debug_assertions)]
         println!(
             "{}",
             String::from(temp_dir.clone() + out_file_name + ".json")
         );
+
         return self.serialize(String::from(temp_dir + out_file_name + ".json"));
     }
 }

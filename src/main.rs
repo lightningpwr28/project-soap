@@ -2,6 +2,7 @@
 mod cli;
 use clap::Parser;
 use dirs::home_dir;
+use std::env::temp_dir;
 use std::fs;
 use std::process::Command;
 
@@ -192,4 +193,31 @@ fn clean_up(overwrite: bool, file_location: String, out_location: String) {
 
         fs::remove_file(out_location).expect("Error removing temporary files");
     }
+
+    let temp_dir;
+
+    if cfg!(windows) {
+        temp_dir = String::from(
+            home_dir()
+                .expect("Error getting user's home directory")
+                .to_str()
+                .expect("Error converting user's home directory to string"),
+        ) + &String::from("\\.project-soap\\temp\\")
+    } else {
+        temp_dir = String::from(
+            home_dir()
+                .expect("Error getting user's home directory")
+                .to_str()
+                .expect("Error converting user's home directory to string"),
+        ) + &String::from("/.project-soap/temp/")
+    }
+
+    let binding = file_location.clone();
+    let out_file_name = Path::new(&binding)
+        .file_stem()
+        .expect("error getting in file name to find output json")
+        .to_str()
+        .expect("Error converting file name to string");
+
+    fs::remove_file(temp_dir + out_file_name + ".json").expect("Error removing transcribed file");
 }
