@@ -38,15 +38,6 @@
 					Source="..\..\target\release\libwinpthread-1.dll" />
 
 			</Component>
-			<Component>
-				<File Source="..\..\list.txt" />
-			</Component>
-			
-			<Component Id="CreateModelFolder" Directory="ModelFolder" Guid="ae68040e-b80e-4217-b33a-35d3ec3ba257">
-				<CreateFolder />
-			</Component>
-
-
 		</ComponentGroup>
 	</Package>
 </Wix>

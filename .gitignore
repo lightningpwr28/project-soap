@@ -4,3 +4,5 @@
 installer/WinInstaller/.vs
 installer/WinInstaller/bin
 installer/WinInstaller/obj
+*.msi
+*.wixpdb
