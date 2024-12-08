@@ -21,6 +21,7 @@ fn main() {
 
     let file_location = args.file_in.clone();
     let mut out_location = args.out.clone();
+    let repeat = args.repeat.clone();
 
     let start = Instant::now();
 
@@ -71,21 +72,45 @@ fn main() {
         overwrite = false;
     }
 
-    let count = remove_expletives(
+    let mut count = remove_expletives(
         load_expletives(),
         cleaner.transcribe(),
         file_location.clone(),
         out_location.clone(),
     );
 
-    if count != 0 {
-        clean_up(overwrite, file_location, out_location)
-    };
+    let mut temp_count = 1;
+    let mut iterations = 0;
+
+    if repeat {
+        while temp_count != 0 {
+            clean_up(overwrite, file_location.clone(), out_location.clone());
+            temp_count = remove_expletives(
+                load_expletives(),
+                cleaner.transcribe(),
+                file_location.clone(),
+                out_location.clone(),
+            );
+            count += temp_count;
+            iterations += 1;
+        }
+    } else {
+        if count != 0 {
+            clean_up(overwrite, file_location, out_location);
+        }
+    }
 
     let end = Instant::now();
-
     println!("Removed {} expletives.", count);
-    println!("Filtering took {:#?}", end.duration_since(start));
+    if repeat {
+        println!(
+            "Filtering took {:#?} and {} iterations",
+            end.duration_since(start),
+            iterations
+        );
+    } else {
+        println!("Filtering took {:#?}", end.duration_since(start));
+    }
 }
 
 // checks each word against the HashSet, makes a filter string to remove it if it is on the list, and then calls ffmpeg to remove it

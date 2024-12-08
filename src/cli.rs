@@ -26,6 +26,9 @@ pub struct Args {
         .into())]
     pub threads: usize,
 
+    #[arg(long, default_value_t = false)]
+    pub repeat: bool,
+
 }
 
 #[derive(clap::Subcommand, PartialEq)]
