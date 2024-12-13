@@ -82,7 +82,7 @@ fn main() {
     let mut temp_count = 1;
     let mut iterations = 0;
 
-    if repeat {
+    if repeat && count > 0 {
         while temp_count != 0 {
             clean_up(overwrite, file_location.clone(), out_location.clone());
             temp_count = remove_expletives(
