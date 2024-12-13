@@ -14,6 +14,7 @@ impl WhisperXLocal {
     // checks for some of the required dependencies of and runs the suggested installation commands of WhisperX
     fn setup() {
         // It seems like with a default install of the CUDA Toolkit, these will exist
+        println!("Checking CUDA is installed...");
         #[cfg(windows)]
         std::env::var("CUDA_PATH").expect("CUDA Toolkit not installed or not in PATH");
 
@@ -22,17 +23,21 @@ impl WhisperXLocal {
             panic!("CUDA Toolkit may not be installed; Symlink at /usr/local/cuda may not exist")
         }
 
+        println!("Making the conda env...");
         // makes the conda env
         Command::new("conda")
             .arg("create")
             .args(["--name", "whisperx"])
             .arg("python=3.10")
             .spawn()
-            .expect("Error running making conda environment");
+            .expect("Error making conda environment");
 
+        println!("Installing the inferencing dependencies...");
         // installs the heavy hitters
         let output = Command::new("conda")
             .arg("install")
+            .args(["-n", "whisperx"])
+            .arg("numpy<2")
             .arg("pytorch==2.0.0")
             .arg("torchaudio==2.0.0")
             .arg("pytorch-cuda=11.8")
@@ -44,8 +49,12 @@ impl WhisperXLocal {
         #[cfg(debug_assertions)]
         println!("{:#?}", output);
 
+        println!("Installing WhisperX...");
         // installs whisperx
-        Command::new("pip")
+        Command::new("conda")
+            .arg("run")
+            .args(["-n", "whisperx"])
+            .arg("pip")
             .arg("install")
             .arg("git+https://github.com/m-bain/whisperx.git@v3.1.1")
             .arg("--upgrade")
@@ -174,14 +183,29 @@ impl Cleaner for WhisperXLocal {
             .to_str()
             .expect("Error converting file name to string");
 
-        let out = Command::new("whisperx")
+        #[cfg(unix)]
+        let out = Command::new("conda")
+            .arg("run")
+            .args(["-n", "whisperx"])
+            .arg("whisperx")
             .arg(self.file_location.clone())
             .args(["--output_dir", &temp_dir.clone()])
             .args(["--highlight_words", "True"])
             .args(["--output_format", "json"])
-            .args(self.other_options.clone().split(' '))
+            .args(self.other_options.clone().split_whitespace())
             .output()
             .expect("Error running WhisperX");
+
+        #[cfg(windows)]
+        let out =
+            Command::new("C:\\Users\\squid\\miniconda3\\envs\\whisperx\\Scripts\\whisperx.exe")
+                .arg(self.file_location.clone())
+                .args(["--output_dir", &temp_dir.clone()])
+                .args(["--highlight_words", "True"])
+                .args(["--output_format", "json"])
+                .args(self.other_options.clone().split_whitespace())
+                .output()
+                .expect("Error running WhisperX");
 
         #[cfg(debug_assertions)]
         print!("{:#?}", out);
