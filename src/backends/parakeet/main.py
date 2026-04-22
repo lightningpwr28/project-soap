@@ -14,10 +14,8 @@ def main():
 
     output = asr_model.transcribe([sys.argv[1]], timestamps=True)
 
-    print(output[0].timestamp["word"])
-
     out_json = json.dumps(output[0].timestamp["word"])
-    # print(out_json)
+    print(out_json)
 
     with open("out.json", "w") as f:
         f.write(out_json)

@@ -1,5 +1,5 @@
 use crate::{backends::Cleaner, cli};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 // For FFmpeg
 use std::process::Command;
@@ -40,14 +40,14 @@ impl ParakeetLocal {
             .expect("FFmpeg error");
     }
 
-    fn serialize(&self, json_string: &str) -> Vec<super::Word> {
-        #[derive(Deserialize)]
+    fn deserialize(&self, json_string: &str) -> Vec<super::Word> {
+        #[derive(Serialize, Deserialize)]
         struct ParakeetWord {
             word: String,
             #[allow(dead_code)]
-            start_offset: f32,
+            start_offset: u16,
             #[allow(dead_code)]
-            end_offset: f32,
+            end_offset: u16,
             start: f32,
             end: f32,
         }
@@ -61,7 +61,7 @@ impl ParakeetLocal {
                 crate::backends::Word { word, start, end }
             }
         }
-
+        //println!("{:?}", json_string);
         let parakeet_words: Vec<ParakeetWord> =
             serde_json::from_str(json_string).expect("Error serializing Parakeet output");
 
@@ -77,19 +77,23 @@ impl Cleaner for ParakeetLocal {
         self.preprocess_audio();
         let out = Command::new("uv")
             .arg("run")
+            .args(["--project", "./src/backends/parakeet/"])
             .arg("./src/backends/parakeet/main.py")
             .arg(self.preprocessed_file_location.clone())
             .output()
             .expect("Error running Parakeet");
 
+        //println!("{:?}", out);
+
         let raw =
             String::from_utf8(out.stdout).expect("Error converting Parakeet stdout to String");
-        let mut lines = raw.lines();
-        lines.next();
-        let json_words = lines
-            .next()
-            .expect("error getting second line of Parakeet stdout");
+        println!("{}", raw);
+        // let mut lines = raw.lines();
+        // //lines.next();
+        // let json_words = lines
+        //     .next()
+        //     .expect("error getting second line of Parakeet stdout");
 
-        return self.serialize(json_words);
+        return self.deserialize(&raw);
     }
 }
