@@ -30,6 +30,9 @@ fn main() {
         cli::Backend::WhisperXLocal { .. } => {
             backends::whisperx_local::WhisperXLocal::from_args(args)
         }
+        cli::Backend::ParakeetLocal { .. } => {
+            backends::parakeet_local::ParakeetLocal::from_args(args)
+        }
     };
 
     let mut cleaner = match cleaner {
