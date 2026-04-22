@@ -176,7 +176,15 @@ fn load_expletives() -> HashSet<String> {
 
     // reads the lines of the file
     #[cfg(unix)]
-    let lines = read_lines("~/.project-soap/list.txt").expect("Error getting list of expletives");
+    let lines = read_lines(
+        home_dir()
+            .expect("Error getting user's home directory")
+            .to_str()
+            .expect("Error converting user's home directory to string")
+            .to_string()
+            + "/.project-soap/list.txt",
+    )
+    .expect("Unix: Error getting list of expletives");
 
     #[cfg(windows)]
     let lines = read_lines(
@@ -187,7 +195,7 @@ fn load_expletives() -> HashSet<String> {
             .to_string()
             + "\\.project-soap\\list.txt",
     )
-    .expect("Error getting list of expletives");
+    .expect("Windows: Error getting list of expletives");
 
     // Consumes the iterator, returns an (Optional) String
     for line in lines.flatten() {
