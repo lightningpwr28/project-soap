@@ -5,10 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "nemo-toolkit[asr]>=2.6.1",
+    "nemo-toolkit[asr]>=2.6.2",
     "numpy>=2.4.4",
-    "torch==2.4.0",
-    "torchaudio==2.4.0",
-    "nemo_toolkit[asr]",
+    "torch>=2.9.1",
+    "torchaudio>=2.9",
+    "nemo_toolkit[asr]>=2.6.2",
 
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
