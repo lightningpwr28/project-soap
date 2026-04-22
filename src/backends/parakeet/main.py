@@ -2,10 +2,9 @@ import json
 import logging
 import sys
 
-logging.disable(logging.CRITICAL)
-
 import nemo.collections.asr as nemo_asr
-import torch
+
+logging.disable(logging.CRITICAL)
 
 
 def main():
