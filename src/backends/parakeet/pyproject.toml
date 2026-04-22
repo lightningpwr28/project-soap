@@ -1,0 +1,14 @@
+[project]
+name = "parakeet"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "nemo-toolkit[asr]>=2.6.1",
+    "numpy>=2.4.4",
+    "torch==2.4.0",
+    "torchaudio==2.4.0",
+    "nemo_toolkit[asr]",
+
+]
