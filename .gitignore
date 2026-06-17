@@ -6,3 +6,7 @@ installer/WinInstaller/bin
 installer/WinInstaller/obj
 *.msi
 *.wixpdb
+*.h
+*.so
+*.wav
+*.json
